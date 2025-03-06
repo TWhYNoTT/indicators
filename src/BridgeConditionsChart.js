@@ -1,17 +1,41 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as d3 from 'd3';
+import _ from 'lodash';
 
-// NVD3 visualization for Bridge Conditions with actual data
-const BridgeConditionsChart = () => {
+const EnhancedBridgeConditionsChart = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedMetric, setSelectedMetric] = useState('MPO- All');
+    const [selectedMetrics, setSelectedMetrics] = useState(['MPO- All']);
+    const [viewType, setViewType] = useState('trend'); // 'trend' or 'comparison'
+    const [selectedYear, setSelectedYear] = useState(null);
+    const [showLocalOwnership, setShowLocalOwnership] = useState(false);
     const chartRef = useRef(null);
 
-    // Parse the actual Bridge Conditions data
+    // Color scale for metrics
+    const colors = ['#008485', '#d97706', '#be123c', '#1d4ed8', '#15803d'];
+
+    // Jurisdiction codes and their full names for better labeling
+    const jurisdictionMap = {
+        'MPO': 'Regional Average',
+        'Colonial Heights': 'Colonial Heights',
+        'Petersburg': 'Petersburg',
+        'Hopewell': 'Hopewell',
+        'Dinwiddie': 'Dinwiddie County',
+        'Chesterfield': 'Chesterfield County',
+        'Prince George': 'Prince George County'
+    };
+
+    // Ownership codes and their full names
+    const ownershipMap = {
+        'All': 'All Bridges',
+        'State': 'State-Owned',
+        'Local': 'Locally-Owned',
+        'Other': 'Other Ownership'
+    };
+
+    // Parse the CSV data
     useEffect(() => {
-        // The actual CSV data is now parsed directly
         const csvData = `year,MPO- All,MPO- State,MPO- Local,MPO- Other,Colonial Heights-All,Colonial Heights-State,Colonial Heights-Local,Colonial Heights-Other,Petersburg-All,Petersburg-State,Petersburg-Local,Petersburg-Other,Hopewell-All,Hopewell-State,Hopewell-Local,Hopewell-Other,Dinwiddie-All,Dinwiddie-State,Dinwiddie-Local,Dinwiddie-Other,Chesterfield-All,Chesterfield-State,Chesterfield-Local,Chesterfield-Other,Prince George-All,Prince George-State,Prince George-Local,Prince George-Other
 2000,0.139,0.151,0.254,0.075,0.173,0.157,0.223,0.135,0.191,0.165,0.247,0.208,0.131,0.131,0.179,0.022,0.181,0.159,0.235,0.182,0.244,0.265,0.209,0.2,0.144,0.189,0.147,0.06
 2001,0.15,0.165,0.264,0.076,0.182,0.165,0.234,0.135,0.203,0.178,0.261,0.209,0.129,0.125,0.182,0.022,0.191,0.165,0.256,0.183,0.232,0.246,0.222,0.169,0.137,0.171,0.146,0.06
@@ -42,6 +66,11 @@ const BridgeConditionsChart = () => {
             // Parse CSV data
             const parsedData = d3.csvParse(csvData, d3.autoType);
             setData(parsedData);
+
+            // Set the most recent year as the default for comparison view
+            const latestYear = d3.max(parsedData, d => d.year);
+            setSelectedYear(latestYear);
+
             setLoading(false);
         } catch (err) {
             setError(`Error parsing data: ${err.message}`);
@@ -49,24 +78,91 @@ const BridgeConditionsChart = () => {
         }
     }, []);
 
-    // Memoize the chart rendering logic
-    const renderChart = useCallback(() => {
+    // Toggle a metric selection
+    const toggleMetric = (metric) => {
+        if (selectedMetrics.includes(metric)) {
+            // Only remove if it's not the only selected metric
+            if (selectedMetrics.length > 1) {
+                setSelectedMetrics(selectedMetrics.filter(m => m !== metric));
+            }
+        } else {
+            // Add metric if not already selected (limit to 5)
+            if (selectedMetrics.length < 5) {
+                setSelectedMetrics([...selectedMetrics, metric]);
+            }
+        }
+    };
+
+    // Toggle view type between trend and comparison
+    const toggleViewType = () => {
+        setViewType(viewType === 'trend' ? 'comparison' : 'trend');
+    };
+
+    // Toggle between showing only "All" ownership or all ownership types
+    const toggleOwnershipView = () => {
+        setShowLocalOwnership(!showLocalOwnership);
+    };
+
+    // Change selected year for comparison view
+    const changeSelectedYear = (year) => {
+        setSelectedYear(year);
+    };
+
+    // Get metrics organized by jurisdiction and ownership
+    const getOrganizedMetrics = () => {
+        if (data.length === 0) return [];
+
+        // Get all column names except 'year'
+        const metrics = Object.keys(data[0]).filter(key => key !== 'year');
+
+        // Group metrics by jurisdiction
+        const groupedMetrics = {};
+
+        metrics.forEach(metric => {
+            // Parse the metric name to get jurisdiction and ownership
+            const [jurisdiction, ownership] = metric.split('-');
+
+            if (!groupedMetrics[jurisdiction]) {
+                groupedMetrics[jurisdiction] = [];
+            }
+
+            groupedMetrics[jurisdiction].push({
+                value: metric,
+                ownership: ownership,
+                label: `${jurisdictionMap[jurisdiction] || jurisdiction}: ${ownershipMap[ownership] || ownership}`
+            });
+        });
+
+        return groupedMetrics;
+    };
+
+    // Get filtered metrics based on selected view
+    const getFilteredMetrics = () => {
+        const groupedMetrics = getOrganizedMetrics();
+        const result = [];
+
+        Object.keys(groupedMetrics).forEach(jurisdiction => {
+            // If not showing local ownership details, only include "All" metrics
+            const filtered = showLocalOwnership
+                ? groupedMetrics[jurisdiction]
+                : groupedMetrics[jurisdiction].filter(m => m.ownership === 'All');
+
+            result.push(...filtered);
+        });
+
+        return result;
+    };
+
+    // Render trend chart (line chart over time)
+    const renderTrendChart = useCallback(() => {
         if (!chartRef.current || data.length === 0) return;
 
         // Clear previous chart
         d3.select(chartRef.current).selectAll('*').remove();
 
-        // Format the data for NVD3
-        const chartData = [
-            {
-                key: selectedMetric,
-                values: data.map(d => ({ x: d.year, y: d[selectedMetric] })).filter(d => d.y !== null && d.y !== undefined)
-            }
-        ];
-
-        // Set up chart
-        const margin = { top: 20, right: 20, bottom: 40, left: 60 };
-        const width = 600 - margin.left - margin.right;
+        // Set up chart dimensions
+        const margin = { top: 20, right: 120, bottom: 40, left: 60 };
+        const width = 700 - margin.left - margin.right;
         const height = 400 - margin.top - margin.bottom;
 
         // Create SVG
@@ -77,20 +173,19 @@ const BridgeConditionsChart = () => {
             .append('g')
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
-        // Set up scales
+        // Find maximum value across all selected metrics
+        const maxValue = d3.max(data, d => {
+            return d3.max(selectedMetrics.map(metric => d[metric] || 0));
+        });
+
+        // Set up scales with proper domain for all metrics
         const xScale = d3.scaleLinear()
             .domain(d3.extent(data, d => d.year))
             .range([0, width]);
 
         const yScale = d3.scaleLinear()
-            .domain([0, d3.max(data, d => d[selectedMetric]) * 1.1]) // 10% padding on top
+            .domain([0, maxValue * 1.1]) // 10% padding on top
             .range([height, 0]);
-
-        // Create line
-        const line = d3.line()
-            .x(d => xScale(d.x))
-            .y(d => yScale(d.y))
-            .curve(d3.curveMonotoneX);
 
         // Add X axis
         svg.append('g')
@@ -101,90 +196,339 @@ const BridgeConditionsChart = () => {
         svg.append('g')
             .call(d3.axisLeft(yScale).tickFormat(d => d3.format('.1%')(d))); // Format as percentage
 
-        // X axis label
+        // Add X axis label
         svg.append('text')
-            .attr('transform', `translate(${width / 2},${height + margin.top + 20})`)
+            .attr('transform', `translate(${width / 2},${height + 30})`)
             .style('text-anchor', 'middle')
             .style('fill', '#666')
             .text('Year');
 
-        // Y axis label
+        // Add Y axis label
         svg.append('text')
             .attr('transform', 'rotate(-90)')
-            .attr('y', 0 - margin.left)
-            .attr('x', 0 - (height / 2))
-            .attr('dy', '1em')
+            .attr('y', -40)
+            .attr('x', -height / 2)
             .style('text-anchor', 'middle')
             .style('fill', '#666')
             .text('Bridge Deficiency Rate');
 
-        // Add the line
-        svg.append('path')
-            .datum(chartData[0].values)
-            .attr('fill', 'none')
-            .attr('stroke', '#008485') // DVRPC teal color
-            .attr('stroke-width', 2)
-            .attr('d', line);
+        // Add grid lines
+        svg.append('g')
+            .attr('class', 'grid')
+            .style('stroke-dasharray', '3,3')
+            .style('opacity', 0.2)
+            .call(d3.axisLeft(yScale)
+                .tickSize(-width)
+                .tickFormat('')
+            );
 
-        // Add dots
-        svg.selectAll('.dot')
-            .data(chartData[0].values)
-            .enter()
-            .append('circle')
-            .attr('class', 'dot')
-            .attr('cx', d => xScale(d.x))
-            .attr('cy', d => yScale(d.y))
-            .attr('r', 4)
-            .attr('fill', '#008485');
+        // Draw a line for each selected metric
+        selectedMetrics.forEach((metric, i) => {
+            // Create line
+            const line = d3.line()
+                .x(d => xScale(d.year))
+                .y(d => yScale(d[metric]))
+                .defined(d => d[metric] !== null && d[metric] !== undefined)
+                .curve(d3.curveMonotoneX);
 
-        // Tooltip functionality
+            // Add the line
+            svg.append('path')
+                .datum(data.filter(d => d[metric] !== null && d[metric] !== undefined))
+                .attr('fill', 'none')
+                .attr('stroke', colors[i])
+                .attr('stroke-width', i === 0 ? 3 : 2)
+                .attr('stroke-dasharray', i === 0 ? null : '3,3')
+                .attr('d', line);
+
+            // Add dots
+            svg.selectAll(`.dot-${i}`)
+                .data(data.filter(d => d[metric] !== null && d[metric] !== undefined))
+                .enter()
+                .append('circle')
+                .attr('class', `dot dot-${i}`)
+                .attr('cx', d => xScale(d.year))
+                .attr('cy', d => yScale(d[metric]))
+                .attr('r', i === 0 ? 4 : 3)
+                .attr('fill', colors[i])
+                .attr('stroke', 'white')
+                .attr('stroke-width', 1)
+                .attr('data-metric', metric);
+        });
+
+        // Add a legend
+        const legend = svg.append('g')
+            .attr('transform', `translate(${width + 10}, 0)`);
+
+        selectedMetrics.forEach((metric, i) => {
+            const [jurisdiction, ownership] = metric.split('-');
+            const label = `${jurisdictionMap[jurisdiction] || jurisdiction}: ${ownershipMap[ownership] || ownership}`;
+
+            const g = legend.append('g')
+                .attr('transform', `translate(0, ${i * 22})`);
+
+            g.append('line')
+                .attr('x1', 0)
+                .attr('y1', 10)
+                .attr('x2', 20)
+                .attr('y2', 10)
+                .attr('stroke', colors[i])
+                .attr('stroke-width', i === 0 ? 3 : 2)
+                .attr('stroke-dasharray', i === 0 ? null : '3,3');
+
+            g.append('text')
+                .attr('x', 25)
+                .attr('y', 13)
+                .style('font-size', '11px')
+                .text(label);
+        });
+
+        // Create tooltip that follows mouse
         const tooltip = d3.select(chartRef.current)
             .append('div')
             .attr('class', 'tooltip')
-            .style('opacity', 0)
             .style('position', 'absolute')
             .style('background-color', 'white')
-            .style('border', '1px solid #008485')
-            .style('border-radius', '5px')
-            .style('padding', '10px')
-            .style('pointer-events', 'none');
+            .style('border', '1px solid #666')
+            .style('border-radius', '4px')
+            .style('padding', '8px')
+            .style('font-size', '12px')
+            .style('box-shadow', '0 2px 4px rgba(0,0,0,0.1)')
+            .style('pointer-events', 'none')
+            .style('opacity', 0);
 
-        svg.selectAll('.dot')
-            .on('mouseover', (event, d) => {
-                tooltip.transition()
-                    .duration(200)
-                    .style('opacity', .9);
-                tooltip.html(`Year: ${d.x}<br/>Deficiency Rate: ${d3.format('.1%')(d.y)}`)
-                    .style('left', (event.pageX + 10) + 'px')
-                    .style('top', (event.pageY - 28) + 'px');
+        // Add overlay for mouse tracking
+        const overlay = svg.append('rect')
+            .attr('width', width)
+            .attr('height', height)
+            .style('fill', 'none')
+            .style('pointer-events', 'all');
+
+        // Vertical line for hover effect
+        const verticalLine = svg.append('line')
+            .attr('class', 'vertical-line')
+            .attr('y1', 0)
+            .attr('y2', height)
+            .style('stroke', '#666')
+            .style('stroke-width', 1)
+            .style('stroke-dasharray', '3,3')
+            .style('opacity', 0);
+
+        // Handle mouse events
+        overlay
+            .on('mouseover', () => {
+                tooltip.style('opacity', 1);
+                verticalLine.style('opacity', 1);
+
+                // Highlight dots
+                svg.selectAll('.dot')
+                    .style('stroke-width', 2);
             })
             .on('mouseout', () => {
-                tooltip.transition()
-                    .duration(500)
-                    .style('opacity', 0);
+                tooltip.style('opacity', 0);
+                verticalLine.style('opacity', 0);
+
+                // Reset dots
+                svg.selectAll('.dot')
+                    .style('stroke-width', 1);
+            })
+            .on('mousemove', function (event) {
+                // Get mouse position
+                const [mouseX] = d3.pointer(event);
+
+                // Find nearest year
+                const x0 = xScale.invert(mouseX);
+                const bisect = d3.bisector(d => d.year).left;
+                const i = bisect(data, x0, 1);
+
+                if (i === 0 || i >= data.length) return;
+
+                // Find closest data point
+                const d0 = data[i - 1];
+                const d1 = data[i];
+                const d = x0 - d0.year > d1.year - x0 ? d1 : d0;
+
+                // Update vertical line
+                verticalLine
+                    .attr('x1', xScale(d.year))
+                    .attr('x2', xScale(d.year));
+
+                // Build tooltip content
+                let tooltipContent = `<div style="font-weight: bold; margin-bottom: 5px;">Year: ${d.year}</div>`;
+
+                selectedMetrics.forEach((metric, idx) => {
+                    if (d[metric] !== undefined && d[metric] !== null) {
+                        const [jurisdiction, ownership] = metric.split('-');
+                        tooltipContent += `
+                            <div style="display: flex; align-items: center; margin-top: 3px;">
+                                <div style="width: 8px; height: 8px; background: ${colors[idx]}; margin-right: 5px;"></div>
+                                <span>${jurisdictionMap[jurisdiction] || jurisdiction}: ${ownershipMap[ownership] || ownership} - ${d3.format('.1%')(d[metric])}</span>
+                            </div>
+                        `;
+                    }
+                });
+
+                // Position and show tooltip
+                tooltip
+                    .html(tooltipContent)
+                    .style('left', `${event.pageX + 10}px`)
+                    .style('top', `${event.pageY - 28}px`);
             });
 
-    }, [data, selectedMetric]);
+    }, [data, selectedMetrics, colors, jurisdictionMap, ownershipMap]);
 
-    // Render chart when data changes
+    // Render comparison chart (bar chart for specific year)
+    const renderComparisonChart = useCallback(() => {
+        if (!chartRef.current || data.length === 0 || !selectedYear) return;
+
+        // Clear previous chart
+        d3.select(chartRef.current).selectAll('*').remove();
+
+        // Get data for the selected year
+        const yearData = data.find(d => d.year === selectedYear);
+        if (!yearData) return;
+
+        // Set up chart dimensions
+        const margin = { top: 30, right: 80, bottom: 80, left: 60 };
+        const width = 700 - margin.left - margin.right;
+        const height = 400 - margin.top - margin.bottom;
+
+        // Create SVG
+        const svg = d3.select(chartRef.current)
+            .append('svg')
+            .attr('width', width + margin.left + margin.right)
+            .attr('height', height + margin.top + margin.bottom)
+            .append('g')
+            .attr('transform', `translate(${margin.left},${margin.top})`);
+
+        // Prepare data for selected metrics
+        const chartData = selectedMetrics.map(metric => {
+            const [jurisdiction, ownership] = metric.split('-');
+            return {
+                metric,
+                jurisdiction,
+                ownership,
+                label: `${jurisdictionMap[jurisdiction] || jurisdiction}: ${ownershipMap[ownership] || ownership}`,
+                value: yearData[metric]
+            };
+        }).filter(d => d.value !== null && d.value !== undefined);
+
+        // Sort data by value
+        chartData.sort((a, b) => a.value - b.value);
+
+        // Set up scales
+        const xScale = d3.scaleLinear()
+            .domain([0, d3.max(chartData, d => d.value) * 1.1])
+            .range([0, width]);
+
+        const yScale = d3.scaleBand()
+            .domain(chartData.map(d => d.metric))
+            .range([0, height])
+            .padding(0.3);
+
+        // Add Y axis
+        svg.append('g')
+            .call(d3.axisLeft(yScale).tickFormat(d => {
+                const [jurisdiction, ownership] = d.split('-');
+                return `${jurisdictionMap[jurisdiction] || jurisdiction}: ${ownershipMap[ownership] || ownership}`;
+            }));
+
+        // Add X axis
+        svg.append('g')
+            .attr('transform', `translate(0,${height})`)
+            .call(d3.axisBottom(xScale).tickFormat(d => d3.format('.1%')(d)));
+
+        // Add X axis label
+        svg.append('text')
+            .attr('transform', `translate(${width / 2},${height + 35})`)
+            .style('text-anchor', 'middle')
+            .style('fill', '#666')
+            .text('Bridge Deficiency Rate');
+
+        // Add title
+        svg.append('text')
+            .attr('x', width / 2)
+            .attr('y', -10)
+            .attr('text-anchor', 'middle')
+            .style('font-size', '14px')
+            .style('font-weight', 'bold')
+            .text(`Bridge Deficiency Comparison (${selectedYear})`);
+
+        // Add grid lines
+        svg.append('g')
+            .attr('class', 'grid')
+            .style('stroke-dasharray', '3,3')
+            .style('opacity', 0.2)
+            .call(d3.axisBottom(xScale)
+                .tickSize(height)
+                .tickFormat('')
+            );
+
+        // Create bars
+        svg.selectAll('.bar')
+            .data(chartData)
+            .enter()
+            .append('rect')
+            .attr('class', 'bar')
+            .attr('y', d => yScale(d.metric))
+            .attr('x', 0)
+            .attr('height', yScale.bandwidth())
+            .attr('width', d => xScale(d.value))
+            .attr('fill', (d, i) => colors[i % colors.length])
+            .on('mouseover', function (event, d) {
+                // Highlight bar
+                d3.select(this).attr('opacity', 0.8);
+
+                // Show tooltip
+                d3.select(chartRef.current)
+                    .append('div')
+                    .attr('class', 'tooltip')
+                    .style('position', 'absolute')
+                    .style('background-color', 'white')
+                    .style('border', '1px solid #666')
+                    .style('border-radius', '4px')
+                    .style('padding', '8px')
+                    .style('font-size', '12px')
+                    .style('box-shadow', '0 2px 4px rgba(0,0,0,0.1)')
+                    .style('pointer-events', 'none')
+                    .style('left', `${event.pageX + 10}px`)
+                    .style('top', `${event.pageY - 28}px`)
+                    .html(`
+                        <div>${d.label}</div>
+                        <div>Deficiency Rate: ${d3.format('.1%')(d.value)}</div>
+                    `);
+            })
+            .on('mouseout', function () {
+                // Reset bar highlight
+                d3.select(this).attr('opacity', 1);
+
+                // Remove tooltip
+                d3.select(chartRef.current).selectAll('.tooltip').remove();
+            });
+
+        // Add value labels
+        svg.selectAll('.value-label')
+            .data(chartData)
+            .enter()
+            .append('text')
+            .attr('class', 'value-label')
+            .attr('y', d => yScale(d.metric) + yScale.bandwidth() / 2 + 4)
+            .attr('x', d => xScale(d.value) + 5)
+            .style('font-size', '11px')
+            .style('fill', '#333')
+            .text(d => d3.format('.1%')(d.value));
+
+    }, [data, selectedMetrics, selectedYear, colors, jurisdictionMap, ownershipMap]);
+
+    // Render chart when data or selections change
     useEffect(() => {
         if (data.length > 0 && !loading) {
-            renderChart();
+            if (viewType === 'trend') {
+                renderTrendChart();
+            } else {
+                renderComparisonChart();
+            }
         }
-    }, [data, selectedMetric, loading, renderChart]);
-
-    // Get unique columns for the dropdown
-    const getMetricOptions = () => {
-        if (data.length === 0) return [];
-
-        // Get all column names except 'year'
-        return Object.keys(data[0])
-            .filter(key => key !== 'year')
-            .map(key => ({
-                value: key,
-                label: key.replace('-', ': ')
-            }));
-    };
+    }, [data, selectedMetrics, selectedYear, viewType, loading, renderTrendChart, renderComparisonChart]);
 
     if (loading) {
         return <div className="flex items-center justify-center h-64">Loading bridge conditions data...</div>;
@@ -196,27 +540,95 @@ const BridgeConditionsChart = () => {
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold text-teal-700 mb-4">Bridge Deficiency Rates Over Time</h2>
+            <h2 className="text-xl font-bold text-teal-700 mb-4">Bridge Deficiency Dashboard</h2>
 
-            <div className="mb-4">
-                <label htmlFor="metric-select" className="block text-sm font-medium text-gray-700 mb-1">
-                    Select Jurisdiction/Bridge Type:
-                </label>
-                <select
-                    id="metric-select"
-                    className="border border-gray-300 rounded-md p-2 w-full max-w-md"
-                    value={selectedMetric}
-                    onChange={(e) => setSelectedMetric(e.target.value)}
-                >
-                    {getMetricOptions().map(option => (
-                        <option key={option.value} value={option.value}>
-                            {option.label}
-                        </option>
-                    ))}
-                </select>
+            <div className="mb-4 flex flex-wrap gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        View Type:
+                    </label>
+                    <div className="flex gap-2">
+                        <button
+                            className={`px-4 py-2 rounded ${viewType === 'trend' ? 'bg-teal-600 text-white' : 'bg-gray-200'}`}
+                            onClick={() => setViewType('trend')}
+                        >
+                            Trend Over Time
+                        </button>
+                        <button
+                            className={`px-4 py-2 rounded ${viewType === 'comparison' ? 'bg-teal-600 text-white' : 'bg-gray-200'}`}
+                            onClick={() => setViewType('comparison')}
+                        >
+                            Regional Comparison
+                        </button>
+                    </div>
+                </div>
+
+                {viewType === 'comparison' && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Select Year:
+                        </label>
+                        <select
+                            className="w-32 p-2 border border-gray-300 rounded"
+                            value={selectedYear}
+                            onChange={(e) => changeSelectedYear(Number(e.target.value))}
+                        >
+                            {data.map(d => (
+                                <option key={d.year} value={d.year}>
+                                    {d.year}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Ownership Details:
+                    </label>
+                    <button
+                        className={`px-4 py-2 rounded ${showLocalOwnership ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                        onClick={toggleOwnershipView}
+                    >
+                        {showLocalOwnership ? 'Show Combined Only' : 'Show Ownership Details'}
+                    </button>
+                </div>
             </div>
 
-            <div className="chart-container mt-6" ref={chartRef}></div>
+            <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Metrics to Compare (max 5):
+                </label>
+                <div className="flex flex-wrap gap-2">
+                    {getFilteredMetrics().map(option => (
+                        <button
+                            key={option.value}
+                            className={`px-3 py-1 text-xs rounded-full ${selectedMetrics.includes(option.value)
+                                ? 'text-white'
+                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                }`}
+                            style={{
+                                backgroundColor: selectedMetrics.includes(option.value)
+                                    ? colors[selectedMetrics.indexOf(option.value) % colors.length]
+                                    : undefined
+                            }}
+                            onClick={() => toggleMetric(option.value)}
+                        >
+                            {option.label}
+                        </button>
+                    ))}
+                </div>
+                {selectedMetrics.length > 1 && (
+                    <button
+                        className="mt-2 text-xs text-red-600 hover:text-red-800"
+                        onClick={() => setSelectedMetrics(selectedMetrics.slice(0, 1))}
+                    >
+                        Clear comparison metrics
+                    </button>
+                )}
+            </div>
+
+            <div className="chart-container border border-gray-200 rounded p-4 bg-gray-50" ref={chartRef}></div>
 
             <div className="mt-6 p-4 bg-gray-50 rounded-md">
                 <h3 className="font-medium text-gray-800 mb-2">About This Data</h3>
@@ -224,10 +636,18 @@ const BridgeConditionsChart = () => {
                     The Bridge Deficiency Rate measures the percentage of bridges that are classified as structurally
                     deficient. Lower values represent better bridge conditions in the region.
                 </p>
-                <p className="text-sm text-gray-600">
-                    From 2000 to 2023, the overall trend shows an improvement (reduction) in bridge deficiency rates
-                    across most jurisdictions, indicating infrastructure improvements over time.
-                </p>
+                {viewType === 'trend' && (
+                    <p className="text-sm text-gray-600">
+                        From 2000 to 2023, the overall trend shows an improvement (reduction) in bridge deficiency rates
+                        across most jurisdictions, indicating infrastructure improvements over time.
+                    </p>
+                )}
+                {showLocalOwnership && (
+                    <p className="text-sm text-gray-600 mt-2">
+                        <strong>Note:</strong> Locally-owned bridges typically show higher deficiency rates than state-owned
+                        bridges, which may reflect differences in maintenance resources and funding.
+                    </p>
+                )}
             </div>
 
             <div className="mt-4 text-sm text-gray-500">
@@ -237,4 +657,4 @@ const BridgeConditionsChart = () => {
     );
 };
 
-export default BridgeConditionsChart;
+export default EnhancedBridgeConditionsChart;

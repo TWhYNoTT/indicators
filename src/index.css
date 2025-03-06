@@ -1,18 +1,85 @@
+/* Tailwind CSS Directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-
+/* Base styles */
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  @apply bg-gray-50 font-sans text-gray-800;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* Chart-specific styles */
+/* .chart-container {
+  min-height: 400px;
+  position: relative;
+} */
+
+/* Tooltip styles - these help with tooltip animations and appearance */
+.tooltip {
+  transition: opacity 0.15s ease;
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Data point styles */
+.dot {
+  transition: r 0.2s ease, stroke-width 0.2s ease;
+  cursor: pointer;
+}
+
+/* Custom selection buttons */
+.metric-button {
+  @apply px-3 py-1 text-xs rounded-full transition-all;
+}
+
+.metric-button.selected {
+  @apply font-medium shadow-sm;
+}
+
+.metric-button.primary {
+  @apply bg-teal-600 text-white;
+}
+
+.metric-button.secondary {
+  @apply bg-blue-600 text-white;
+}
+
+.metric-button.unselected {
+  @apply bg-gray-100 text-gray-800 hover:bg-gray-200;
+}
+
+/* Chart legend */
+.chart-legend {
+  @apply text-xs font-medium;
+}
+
+/* Animation for loading state */
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom headers and containers */
+.chart-title {
+  @apply text-xl font-bold text-teal-700 mb-4;
+}
+
+.chart-section {
+  @apply mb-6 p-4 bg-gray-50 rounded-md border border-gray-200;
+}
+
+.chart-label {
+  @apply block text-sm font-medium text-gray-700 mb-2;
 }

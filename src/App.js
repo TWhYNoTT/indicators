@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import BridgeConditionsChart from './BridgeConditionsChart';
+import CommuteModeChart from './CommuteModeChart';
+import CongestionChart from './CongestionChart';
+import MilesDrivenChart from './MilesDrivenChart';
 
 const TrackingProgressApp = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -132,6 +135,15 @@ const TrackingProgressApp = () => {
   const renderDetailView = () => {
     if (selectedIndicator === 'bridge-conditions') {
       return <BridgeConditionsChart />;
+    }
+    else if (selectedIndicator === 'commute-mode') {
+      return <CommuteModeChart />;
+    }
+    else if (selectedIndicator === 'congestion') {
+      return <CongestionChart />;
+    }
+    else if (selectedIndicator === 'miles-driven') {
+      return <MilesDrivenChart />;
     }
 
     // For other indicators that don't have specific detail components yet
