@@ -141,15 +141,15 @@ const TrackingProgressApp = () => {
     return (
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-teal-700">{indicator.title}</h2>
-          <div className="bg-teal-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+          <h2 className=" ">{indicator.title}</h2>
+          <div className=" text-white px-3 py-1 rounded-full">
             {indicator.category.charAt(0).toUpperCase() + indicator.category.slice(1)}
           </div>
         </div>
 
         <div className="flex items-center mb-6">
           <div className="bg-teal-100 text-teal-800 px-4 py-2 rounded-md flex items-center">
-            <div className="text-2xl font-bold mr-2">{indicator.stat}</div>
+            <div className=" font-bold mr-2">{indicator.stat}</div>
             <div className="text-sm">{indicator.statDesc}</div>
           </div>
         </div>
@@ -163,7 +163,6 @@ const TrackingProgressApp = () => {
         </div>
 
         <div className="border-t border-gray-200 pt-4 text-sm text-gray-500">
-
           <p>Last updated: 2023</p>
         </div>
       </div>
@@ -176,16 +175,16 @@ const TrackingProgressApp = () => {
       <header className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 py-2">
           <div className="flex justify-between items-center">
-            <a href="#" className="text-teal-600 font-bold text-xl">
+            <button onClick={() => { }} className="text-teal-600 font-bold text-xl">
               TRACKING PROGRESS
-            </a>
+            </button>
             <div className="flex space-x-4">
-              <a href="#" className="px-4 py-2 border-2 border-teal-600 text-teal-600 font-medium">
+              {/* <button className="px-4 py-2 border-2 border-teal-600 text-teal-600 font-medium">
                 How To
-              </a>
-              <a href="#" className="px-4 py-2 text-teal-600 font-medium">
+              </button>
+              <button className="px-4 py-2 text-teal-600 font-medium">
                 About
-              </a>
+              </button> */}
             </div>
             <div>
               <span className="text-xl font-bold text-teal-600"></span>
@@ -207,8 +206,6 @@ const TrackingProgressApp = () => {
               onChange={(e) => setFilterBy(e.target.value)}
             >
               <option value="category">category</option>
-
-
             </select>
           </div>
 
@@ -265,13 +262,12 @@ const TrackingProgressApp = () => {
                   const isDisabled = selectedCategory !== 'all' && indicator.category !== selectedCategory;
 
                   return (
-                    <a
+                    <button
                       key={indicator.id}
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
+                      onClick={() => {
                         if (!isDisabled) handleIndicatorClick(indicator);
                       }}
+                      disabled={isDisabled}
                       className={`relative aspect-square flex flex-col items-center justify-center p-2 text-white transition-all group ${isDisabled
                         ? 'bg-gray-400 cursor-not-allowed opacity-40'
                         : `bg-teal-600 hover:opacity-90 ${indicator.hasDetailView ? 'cursor-pointer hover:scale-105' : 'hover:-translate-y-1'}`
@@ -292,20 +288,16 @@ const TrackingProgressApp = () => {
 
                       {/* Hover overlay with additional data */}
                       <div className="absolute inset-0 bg-teal-700 flex flex-col items-center justify-center p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="text-2xl font-bold mb-1">
+                        <div className="font-bold mb-1">
                           {indicator.stat}
                         </div>
                         <div className="text-xs text-center">
                           {indicator.statDesc}
                         </div>
 
-                        {indicator.hasDetailView && (
-                          <div className="mt-2 bg-white bg-opacity-20 rounded px-2 py-1 text-xs">
-                            Click for details
-                          </div>
-                        )}
+
                       </div>
-                    </a>
+                    </button>
                   );
                 })}
               </div>

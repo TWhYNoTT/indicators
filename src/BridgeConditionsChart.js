@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as d3 from 'd3';
 
 // NVD3 visualization for Bridge Conditions with actual data
@@ -49,13 +49,10 @@ const BridgeConditionsChart = () => {
         }
     }, []);
 
-    useEffect(() => {
-        if (data.length > 0 && !loading) {
-            renderChart();
-        }
-    }, [data, selectedMetric, loading]);
+    // Memoize the chart rendering logic
+    const renderChart = useCallback(() => {
+        if (!chartRef.current || data.length === 0) return;
 
-    const renderChart = () => {
         // Clear previous chart
         d3.select(chartRef.current).selectAll('*').remove();
 
@@ -140,67 +137,41 @@ const BridgeConditionsChart = () => {
             .attr('r', 4)
             .attr('fill', '#008485');
 
-        // Add hover dots with values
-        const focus = svg.append('g')
-            .attr('class', 'focus')
-            .style('display', 'none');
-
-        focus.append('circle')
-            .attr('r', 5)
-            .attr('fill', '#008485');
-
-        focus.append('rect')
+        // Tooltip functionality
+        const tooltip = d3.select(chartRef.current)
+            .append('div')
             .attr('class', 'tooltip')
-            .attr('width', 120)
-            .attr('height', 50)
-            .attr('x', 10)
-            .attr('y', -22)
-            .attr('rx', 4)
-            .attr('ry', 4)
-            .style('fill', 'white')
-            .style('stroke', '#008485')
-            .style('opacity', 0.9);
-
-        focus.append('text')
-            .attr('class', 'tooltip-year')
-            .attr('x', 18)
-            .attr('y', -2)
-            .style('font-size', '12px')
-            .style('fill', '#333');
-
-        focus.append('text')
-            .attr('class', 'tooltip-value')
-            .attr('x', 18)
-            .attr('y', 18)
-            .style('font-size', '12px')
-            .style('fill', '#333');
-
-        // Overlay for mouse move events
-        svg.append('rect')
-            .attr('class', 'overlay')
-            .attr('width', width)
-            .attr('height', height)
             .style('opacity', 0)
-            .on('mouseover', () => focus.style('display', null))
-            .on('mouseout', () => focus.style('display', 'none'))
-            .on('mousemove', mousemove);
+            .style('position', 'absolute')
+            .style('background-color', 'white')
+            .style('border', '1px solid #008485')
+            .style('border-radius', '5px')
+            .style('padding', '10px')
+            .style('pointer-events', 'none');
 
-        function mousemove(event) {
-            const bisect = d3.bisector(d => d.x).left;
-            const x0 = xScale.invert(d3.pointer(event)[0]);
-            const i = bisect(chartData[0].values, x0, 1);
-            const d0 = chartData[0].values[i - 1];
-            const d1 = chartData[0].values[i];
+        svg.selectAll('.dot')
+            .on('mouseover', (event, d) => {
+                tooltip.transition()
+                    .duration(200)
+                    .style('opacity', .9);
+                tooltip.html(`Year: ${d.x}<br/>Deficiency Rate: ${d3.format('.1%')(d.y)}`)
+                    .style('left', (event.pageX + 10) + 'px')
+                    .style('top', (event.pageY - 28) + 'px');
+            })
+            .on('mouseout', () => {
+                tooltip.transition()
+                    .duration(500)
+                    .style('opacity', 0);
+            });
 
-            if (!d0 || !d1) return;
+    }, [data, selectedMetric]);
 
-            const d = x0 - d0.x > d1.x - x0 ? d1 : d0;
-
-            focus.attr('transform', `translate(${xScale(d.x)},${yScale(d.y)})`);
-            focus.select('.tooltip-year').text(`Year: ${d.x}`);
-            focus.select('.tooltip-value').text(`Deficiency: ${d3.format('.1%')(d.y)}`);
+    // Render chart when data changes
+    useEffect(() => {
+        if (data.length > 0 && !loading) {
+            renderChart();
         }
-    };
+    }, [data, selectedMetric, loading, renderChart]);
 
     // Get unique columns for the dropdown
     const getMetricOptions = () => {
@@ -260,7 +231,6 @@ const BridgeConditionsChart = () => {
             </div>
 
             <div className="mt-4 text-sm text-gray-500">
-
                 <p>Note: Lower values indicate better bridge conditions (fewer deficient bridges)</p>
             </div>
         </div>
