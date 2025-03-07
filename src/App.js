@@ -33,7 +33,7 @@ const TrackingProgressApp = () => {
       newData: false,
       stat: '15% improvement',
       statDesc: 'in air quality index',
-      image: '/api/placeholder/64/64'
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/air_quality.svg'
     },
     {
       id: 'bridge-conditions',
@@ -43,7 +43,7 @@ const TrackingProgressApp = () => {
       stat: '8.2% improvement',
       statDesc: 'in overall condition ratings',
       hasDetailView: true,
-      image: '/api/placeholder/64/64'
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/bridge_conditions.svg'
     },
     {
       id: 'business-formations',
@@ -52,7 +52,7 @@ const TrackingProgressApp = () => {
       newData: false,
       stat: '95% growth',
       statDesc: 'in annual applications',
-      image: '/api/placeholder/64/64'
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/business_formations.svg'
     },
     {
       id: 'community-integration',
@@ -61,7 +61,7 @@ const TrackingProgressApp = () => {
       newData: false,
       stat: '12% increase',
       statDesc: 'in community participation',
-      image: '/api/placeholder/64/64'
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/community_integration.svg'
     },
     {
       id: 'commute-mode',
@@ -70,7 +70,7 @@ const TrackingProgressApp = () => {
       newData: true,
       stat: '7.5% shift',
       statDesc: 'to sustainable modes',
-      image: '/api/placeholder/64/64'
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/nonsov_mode_share.svg'
     },
     {
       id: 'congestion',
@@ -79,7 +79,7 @@ const TrackingProgressApp = () => {
       newData: false,
       stat: '3.2% reduction',
       statDesc: 'in peak hour delays',
-      image: '/api/placeholder/64/64'
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/roadway_reliability.svg'
     },
     {
       id: 'educational-attainment',
@@ -88,7 +88,7 @@ const TrackingProgressApp = () => {
       newData: false,
       stat: '5.7% increase',
       statDesc: 'in degree completion',
-      image: '/api/placeholder/64/64'
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/educational_attainment.svg'
     },
     {
       id: 'greenhouse-gas',
@@ -97,7 +97,7 @@ const TrackingProgressApp = () => {
       newData: false,
       stat: '10.5% reduction',
       statDesc: 'in carbon emissions',
-      image: '/api/placeholder/64/64'
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/emissions.svg'
     },
     {
       id: 'gdp',
@@ -106,7 +106,7 @@ const TrackingProgressApp = () => {
       newData: true,
       stat: '4.2% growth',
       statDesc: 'in regional economy',
-      image: '/api/placeholder/64/64'
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/exports.svg'
     },
     {
       id: 'housing-affordability',
@@ -115,23 +115,66 @@ const TrackingProgressApp = () => {
       newData: false,
       stat: '7% decline',
       statDesc: 'in affordability index',
-      image: '/api/placeholder/64/64'
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/affordable_housing.svg'
     },
     // Remaining indicators...
-    { id: 'housing-permits', title: 'Housing Permits', category: 'community', newData: false, stat: '18% increase', statDesc: 'in new permits', image: '/api/placeholder/64/64' },
-    { id: 'income', title: 'Income', category: 'equity', newData: false, stat: '3.8% growth', statDesc: 'in median income', image: '/api/placeholder/64/64' },
-    { id: 'job-growth', title: 'Job Growth', category: 'economy', newData: false, stat: '12% increase', statDesc: 'in regional employment', image: '/api/placeholder/64/64' },
-    { id: 'labor-force', title: 'Labor Force', category: 'economy', newData: false, stat: '2.1% expansion', statDesc: 'in labor participation', image: '/api/placeholder/64/64' },
-    { id: 'land-consumption', title: 'Land Consumption', category: 'environment', newData: true, stat: '5.3% reduction', statDesc: 'in per capita use', image: '/api/placeholder/64/64' },
-    { id: 'miles-driven', title: 'Miles Driven', category: 'transportation', newData: false, stat: '1.7% decrease', statDesc: 'in per capita VMT', image: '/api/placeholder/64/64' },
-    { id: 'mortgage-lending', title: 'Mortgage Lending', category: 'economy', newData: false, stat: '9.4% increase', statDesc: 'in loan approvals', image: '/api/placeholder/64/64' },
-    { id: 'pavement-conditions', title: 'Pavement Conditions', category: 'transportation', newData: false, stat: '6.8% improvement', statDesc: 'in surface quality', image: '/api/placeholder/64/64' },
-    { id: 'population-growth', title: 'Population Growth', category: 'community', newData: false, stat: '1.2% annual growth', statDesc: 'in regional population', image: '/api/placeholder/64/64' },
-    { id: 'transit-conditions', title: 'Transit Conditions', category: 'transportation', newData: false, stat: '5.5% improvement', statDesc: 'in system quality', image: '/api/placeholder/64/64' },
-    { id: 'transit-ridership', title: 'Transit Ridership', category: 'transportation', newData: false, stat: '8.7% rise', statDesc: 'in quarterly ridership', image: '/api/placeholder/64/64' },
-    { id: 'transportation-safety', title: 'Transportation Safety', category: 'transportation', newData: false, stat: '11.3% reduction', statDesc: 'in traffic incidents', image: '/api/placeholder/64/64' },
-    { id: 'water-quality', title: 'Water Quality', category: 'environment', newData: false, stat: '7.9% improvement', statDesc: 'in water quality index', image: '/api/placeholder/64/64' },
-    { id: '2050', title: '2050', category: 'sustainability', newData: false, stat: '43% progress', statDesc: 'toward long-term goals', image: '/api/placeholder/64/64' }
+    {
+      id: 'housing-permits', title: 'Housing Permits',
+      category: 'community', newData: false, stat: '18% increase', statDesc: 'in new permits',
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/housing_activity.svg'
+    },
+    {
+      id: 'income', title: 'Income', category: 'equity', newData: false, stat: '3.8% growth',
+      statDesc: 'in median income', image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/income_inequality.svg'
+    },
+    {
+      id: 'job-growth', title: 'Job Growth', category: 'economy', newData: false, stat: '12% increase',
+      statDesc: 'in regional employment', image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/job_growth.svg'
+    },
+    {
+      id: 'labor-force', title: 'Labor Force', category: 'economy', newData: false, stat: '2.1% expansion', statDesc: 'in labor participation',
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/labor_force.svg'
+    },
+    {
+      id: 'land-consumption', title: 'Land Consumption', category: 'environment', newData: true, stat: '5.3% reduction', statDesc: 'in per capita use',
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/land_consumption.svg'
+    },
+    {
+      id: 'miles-driven', title: 'Miles Driven', category: 'transportation', newData: false, stat: '1.7% decrease', statDesc: 'in per capita VMT',
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/miles_driven.svg'
+    },
+    {
+      id: 'mortgage-lending', title: 'Mortgage Lending', category: 'economy', newData: false, stat: '9.4% increase', statDesc: 'in loan approvals',
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/mortgage_lending.svg'
+    },
+    {
+      id: 'pavement-conditions', title: 'Pavement Conditions', category: 'transportation', newData: false, stat: '6.8% improvement', statDesc: 'in surface quality',
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/pavement_conditions.svg'
+    },
+    {
+      id: 'population-growth', title: 'Population Growth', category: 'community', newData: false, stat: '1.2% annual growth', statDesc: 'in regional population',
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/population_growth.svg'
+    },
+    {
+      id: 'transit-conditions', title: 'Transit Conditions', category: 'transportation', newData: false, stat: '5.5% improvement', statDesc: 'in system quality',
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/transit_conditions.svg'
+    },
+    {
+      id: 'transit-ridership', title: 'Transit Ridership', category: 'transportation', newData: false, stat: '8.7% rise', statDesc: 'in quarterly ridership',
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/transit_ridership.svg'
+    },
+    {
+      id: 'transportation-safety', title: 'Transportation Safety', category: 'transportation', newData: false, stat: '11.3% reduction', statDesc: 'in traffic incidents',
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/roadway_safety.svg'
+    },
+    {
+      id: 'water-quality', title: 'Water Quality', category: 'environment', newData: false, stat: '7.9% improvement', statDesc: 'in water quality index',
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/water_quality.svg'
+    },
+    {
+      id: '2050', title: '2050', category: 'sustainability', newData: false, stat: '43% progress', statDesc: 'toward long-term goals',
+      image: 'https://www.dvrpc.org/trackingprogress/img/indicator_icons/tp_homepage_logo.png'
+    }
   ];
 
   // All indicators remain in the grid, but we'll visually filter them
