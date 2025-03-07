@@ -72,20 +72,20 @@ const TransportationSafetyChart = () => {
         try {
             // Parse CSV data
             const parsedData = d3.csvParse(csvData);
-            
+
             // Convert values to numbers
             const typedData = parsedData.map(row => {
                 const newRow = { Year: +row.Year };
-                
+
                 Object.keys(row).forEach(key => {
                     if (key !== 'Year') {
                         newRow[key] = +row[key];
                     }
                 });
-                
+
                 return newRow;
             });
-            
+
             setData(typedData);
             setSelectedYear(Math.max(...typedData.map(d => d.Year)));
             setLoading(false);
@@ -137,7 +137,7 @@ const TransportationSafetyChart = () => {
     // Format value for display
     const formatValue = useCallback((value, metric) => {
         if (value === null || value === undefined) return 'N/A';
-        
+
         if (metric === 'totKill') {
             return d3.format(',d')(value); // Format as integer with commas
         } else {
@@ -287,7 +287,7 @@ const TransportationSafetyChart = () => {
                 .selectAll('text')
                 .style('font-size', '11px')
                 .style('fill', colors.din);
-            
+
             // Add secondary y-axis label
             svg.append('text')
                 .attr('transform', 'rotate(90)')
@@ -330,7 +330,7 @@ const TransportationSafetyChart = () => {
             // Skip if region doesn't have data
             if (!chartData.some(d => d[region] !== undefined && d[region] !== null)) return;
 
-            // Use primary or secondary scale
+            // Use primary or secondary scale - FIXED: No useScale hook call here
             const useScale = (region === 'din' && y2Scale) ? y2Scale : yScale;
 
             // Create line
@@ -358,7 +358,7 @@ const TransportationSafetyChart = () => {
                 .append('circle')
                 .attr('class', `dot-${region}`)
                 .attr('cx', d => xScale(d.Year))
-                .attr('cy', d => useScale(d[region]))
+                .attr('cy', d => useScale(d[region])) // FIXED: No useScale hook call here
                 .attr('r', 4)
                 .attr('fill', colors[region])
                 .attr('stroke', 'white')
@@ -429,7 +429,7 @@ const TransportationSafetyChart = () => {
                 tooltip.style('opacity', 0);
                 verticalLine.style('opacity', 0);
             })
-            .on('mousemove', function(event) {
+            .on('mousemove', function (event) {
                 // Get mouse position
                 const [mouseX] = d3.pointer(event);
 
@@ -457,7 +457,7 @@ const TransportationSafetyChart = () => {
                     if (d[region] !== null && d[region] !== undefined) {
                         const level = getSeverityLevel(d[region], metricType, region);
                         const color = getSeverityColor(level);
-                        
+
                         tooltipContent += `
                             <div style="display: flex; align-items: center; margin-top: 3px;">
                                 <div style="width: 8px; height: 8px; background: ${colors[region]}; margin-right: 5px;"></div>
@@ -502,7 +502,7 @@ const TransportationSafetyChart = () => {
 
         // Prepare data for comparison
         const regions = Object.keys(regionMap);
-        
+
         // Check if Dinwiddie should be included or handled separately
         let includeDinwiddie = true;
         if (metricType === 'totKill' && regions.includes('din')) {
@@ -611,10 +611,10 @@ const TransportationSafetyChart = () => {
                 const level = getSeverityLevel(d.value, metricType, d.region);
                 return getSeverityColor(level);
             })
-            .on('mouseover', function(event, d) {
+            .on('mouseover', function (event, d) {
                 // Highlight bar
                 d3.select(this).attr('opacity', 0.8);
-                
+
                 // Show tooltip
                 const level = getSeverityLevel(d.value, metricType, d.region);
                 d3.select(chartRef.current)
@@ -636,10 +636,10 @@ const TransportationSafetyChart = () => {
                         <div>Safety Level: <span style="color: ${getSeverityColor(level)}">${level}</span></div>
                     `);
             })
-            .on('mouseout', function() {
+            .on('mouseout', function () {
                 // Reset bar highlight
                 d3.select(this).attr('opacity', 1);
-                
+
                 // Remove tooltip
                 d3.select(chartRef.current).selectAll('.tooltip').remove();
             });
@@ -763,14 +763,14 @@ const TransportationSafetyChart = () => {
                 if (value === null || value === undefined) return;
 
                 const level = getSeverityLevel(value, metricType, region);
-                
+
                 svg.append('rect')
                     .attr('x', xScale(year))
                     .attr('y', yScale(region))
                     .attr('width', xScale.bandwidth())
                     .attr('height', yScale.bandwidth())
                     .attr('fill', colorScale(level))
-                    .on('mouseover', function(event) {
+                    .on('mouseover', function (event) {
                         // Show tooltip
                         d3.select(chartRef.current)
                             .append('div')
@@ -791,11 +791,11 @@ const TransportationSafetyChart = () => {
                                 <div>Safety Level: <span style="color: ${colorScale(level)}">${level}</span></div>
                             `);
                     })
-                    .on('mouseout', function() {
+                    .on('mouseout', function () {
                         // Remove tooltip
                         d3.select(chartRef.current).selectAll('.tooltip').remove();
                     });
-                
+
                 // Add text for values in larger cells
                 if (xScale.bandwidth() > 28 && yScale.bandwidth() > 20) {
                     svg.append('text')
@@ -914,13 +914,13 @@ const TransportationSafetyChart = () => {
                         </button>
                     </div>
                 </div>
-                
+
                 {viewType === 'comparison' && (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Select Year:
                         </label>
-                        <select 
+                        <select
                             className="w-32 p-2 border border-gray-300 rounded"
                             value={selectedYear}
                             onChange={(e) => changeSelectedYear(e.target.value)}
@@ -944,15 +944,14 @@ const TransportationSafetyChart = () => {
                         {getAvailableRegions().map(region => (
                             <button
                                 key={region}
-                                className={`px-3 py-1 rounded-full ${
-                                    selectedRegions.includes(region)
+                                className={`px-3 py-1 rounded-full ${selectedRegions.includes(region)
                                         ? 'text-white'
                                         : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                                }`}
-                                style={{ 
-                                    backgroundColor: selectedRegions.includes(region) 
-                                        ? colors[region] 
-                                        : undefined 
+                                    }`}
+                                style={{
+                                    backgroundColor: selectedRegions.includes(region)
+                                        ? colors[region]
+                                        : undefined
                                 }}
                                 onClick={() => toggleRegion(region)}
                             >
@@ -986,7 +985,7 @@ const TransportationSafetyChart = () => {
                         <span className="font-medium">Per VMT:</span> Fatalities per 100 million vehicle miles traveled (normalizes for driving exposure)
                     </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mt-3">
                     <div className="p-2 rounded" style={{ backgroundColor: getSeverityColor('Low') + '30' }}>
                         <span className="font-medium">Low:</span> Relatively safe
@@ -1004,9 +1003,9 @@ const TransportationSafetyChart = () => {
                         <span className="font-medium">Very High:</span> Critical safety concern
                     </div>
                 </div>
-                
+
                 <div className="mt-3 p-2 bg-yellow-50 rounded">
-                    <span className="font-medium">Analysis Note:</span> Dinwiddie consistently shows higher fatality numbers, which may be influenced by 
+                    <span className="font-medium">Analysis Note:</span> Dinwiddie consistently shows higher fatality numbers, which may be influenced by
                     including segments of major highways, long rural roads, or differences in data collection methodologies.
                 </div>
             </div>
