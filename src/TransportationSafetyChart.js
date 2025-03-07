@@ -336,7 +336,7 @@ const TransportationSafetyChart = () => {
             // Create line
             const line = d3.line()
                 .x(d => xScale(d.Year))
-                .y(d => useScale(d[region]))
+                .y(d => selectedScale(d[region]))  // Use selectedScale instead of useScale
                 .defined(d => d[region] !== null && d[region] !== undefined)
                 .curve(d3.curveMonotoneX);
 
