@@ -274,7 +274,7 @@ const TrackingProgressApp = () => {
                     className="w-full flex items-center px-4 py-3 text-white font-medium"
                     style={{
                       backgroundColor: category.color,
-                      opacity: selectedCategory === 'all' || selectedCategory === category.id ? 1 : 0.7
+                      opacity: selectedCategory === 'all' || selectedCategory === category.id ? 1 : 0.5
                     }}
                   >
                     <img
