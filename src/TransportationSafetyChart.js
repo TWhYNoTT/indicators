@@ -331,7 +331,7 @@ const TransportationSafetyChart = () => {
             if (!chartData.some(d => d[region] !== undefined && d[region] !== null)) return;
 
             // Use primary or secondary scale - FIXED: No useScale hook call here
-            const useScale = (region === 'din' && y2Scale) ? y2Scale : yScale;
+            const selectedScale = (region === 'din' && y2Scale) ? y2Scale : yScale;
 
             // Create line
             const line = d3.line()
@@ -358,7 +358,7 @@ const TransportationSafetyChart = () => {
                 .append('circle')
                 .attr('class', `dot-${region}`)
                 .attr('cx', d => xScale(d.Year))
-                .attr('cy', d => useScale(d[region])) // FIXED: No useScale hook call here
+                .attr('cy', d => selectedScale(d[region]))
                 .attr('r', 4)
                 .attr('fill', colors[region])
                 .attr('stroke', 'white')
@@ -945,8 +945,8 @@ const TransportationSafetyChart = () => {
                             <button
                                 key={region}
                                 className={`px-3 py-1 rounded-full ${selectedRegions.includes(region)
-                                        ? 'text-white'
-                                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                    ? 'text-white'
+                                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                                     }`}
                                 style={{
                                     backgroundColor: selectedRegions.includes(region)
