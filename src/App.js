@@ -3,24 +3,28 @@ import BridgeConditionsChart from './BridgeConditionsChart';
 import CommuteModeChart from './CommuteModeChart';
 import CongestionChart from './CongestionChart';
 import MilesDrivenChart from './MilesDrivenChart';
+import PavementConditionsChart from './PavementConditionsChart';
+import TransitConditionsChart from './TransitConditionsChart';
+import TransitRidershipChart from './TransitRidershipChart';
+import TransportationSafetyChart from './TransportationSafetyChart';
 
 const TrackingProgressApp = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [filterBy, setFilterBy] = useState('category');
   const [selectedIndicator, setSelectedIndicator] = useState(null);
 
-  // Categories for the sidebar
+  // Categories for the sidebar with added image placeholders
   const categories = [
-    { id: 'sustainability', name: 'Sustainability', color: '#008485' },
-    { id: 'equity', name: 'Equity', color: '#008485' },
-    { id: 'resiliency', name: 'Resiliency', color: '#008485' },
-    { id: 'environment', name: 'Environment', color: '#008485' },
-    { id: 'community', name: 'Community', color: '#008485' },
-    { id: 'transportation', name: 'Transportation', color: '#008485' },
-    { id: 'economy', name: 'Economy', color: '#008485' }
+    { id: 'sustainability', name: 'Sustainability', color: '#00474e', image: './images/sustain-icon.png' },
+    { id: 'equity', name: 'Equity', color: '#166871', image: './images/equity-icon.png' },
+    { id: 'resiliency', name: 'Resiliency', color: '#4d8185', image: './images/resil-icon.png' },
+    { id: 'environment', name: 'Environment', color: '#006227', image: './images/enviro-icon.png' },
+    { id: 'community', name: 'Community', color: '#004c6c', image: './images/comm-icon.png' },
+    { id: 'transportation', name: 'Transportation', color: '#433c59', image: './images/transpo-icon.png' },
+    { id: 'economy', name: 'Economy', color: '#721e52', image: './images/econo-icon.png' }
   ];
 
-  // Indicators data with stats for hover effect
+  // Indicators data with stats for hover effect and added image placeholders
   const indicators = [
     {
       id: 'air-quality',
@@ -28,7 +32,8 @@ const TrackingProgressApp = () => {
       category: 'environment',
       newData: false,
       stat: '15% improvement',
-      statDesc: 'in air quality index'
+      statDesc: 'in air quality index',
+      image: '/api/placeholder/64/64'
     },
     {
       id: 'bridge-conditions',
@@ -37,7 +42,8 @@ const TrackingProgressApp = () => {
       newData: false,
       stat: '8.2% improvement',
       statDesc: 'in overall condition ratings',
-      hasDetailView: true
+      hasDetailView: true,
+      image: '/api/placeholder/64/64'
     },
     {
       id: 'business-formations',
@@ -45,7 +51,8 @@ const TrackingProgressApp = () => {
       category: 'economy',
       newData: false,
       stat: '95% growth',
-      statDesc: 'in annual applications'
+      statDesc: 'in annual applications',
+      image: '/api/placeholder/64/64'
     },
     {
       id: 'community-integration',
@@ -53,7 +60,8 @@ const TrackingProgressApp = () => {
       category: 'community',
       newData: false,
       stat: '12% increase',
-      statDesc: 'in community participation'
+      statDesc: 'in community participation',
+      image: '/api/placeholder/64/64'
     },
     {
       id: 'commute-mode',
@@ -61,7 +69,8 @@ const TrackingProgressApp = () => {
       category: 'transportation',
       newData: true,
       stat: '7.5% shift',
-      statDesc: 'to sustainable modes'
+      statDesc: 'to sustainable modes',
+      image: '/api/placeholder/64/64'
     },
     {
       id: 'congestion',
@@ -69,7 +78,8 @@ const TrackingProgressApp = () => {
       category: 'transportation',
       newData: false,
       stat: '3.2% reduction',
-      statDesc: 'in peak hour delays'
+      statDesc: 'in peak hour delays',
+      image: '/api/placeholder/64/64'
     },
     {
       id: 'educational-attainment',
@@ -77,7 +87,8 @@ const TrackingProgressApp = () => {
       category: 'equity',
       newData: false,
       stat: '5.7% increase',
-      statDesc: 'in degree completion'
+      statDesc: 'in degree completion',
+      image: '/api/placeholder/64/64'
     },
     {
       id: 'greenhouse-gas',
@@ -85,7 +96,8 @@ const TrackingProgressApp = () => {
       category: 'environment',
       newData: false,
       stat: '10.5% reduction',
-      statDesc: 'in carbon emissions'
+      statDesc: 'in carbon emissions',
+      image: '/api/placeholder/64/64'
     },
     {
       id: 'gdp',
@@ -93,7 +105,8 @@ const TrackingProgressApp = () => {
       category: 'economy',
       newData: true,
       stat: '4.2% growth',
-      statDesc: 'in regional economy'
+      statDesc: 'in regional economy',
+      image: '/api/placeholder/64/64'
     },
     {
       id: 'housing-affordability',
@@ -101,23 +114,24 @@ const TrackingProgressApp = () => {
       category: 'equity',
       newData: false,
       stat: '7% decline',
-      statDesc: 'in affordability index'
+      statDesc: 'in affordability index',
+      image: '/api/placeholder/64/64'
     },
     // Remaining indicators...
-    { id: 'housing-permits', title: 'Housing Permits', category: 'community', newData: false, stat: '18% increase', statDesc: 'in new permits' },
-    { id: 'income', title: 'Income', category: 'equity', newData: false, stat: '3.8% growth', statDesc: 'in median income' },
-    { id: 'job-growth', title: 'Job Growth', category: 'economy', newData: false, stat: '12% increase', statDesc: 'in regional employment' },
-    { id: 'labor-force', title: 'Labor Force', category: 'economy', newData: false, stat: '2.1% expansion', statDesc: 'in labor participation' },
-    { id: 'land-consumption', title: 'Land Consumption', category: 'environment', newData: true, stat: '5.3% reduction', statDesc: 'in per capita use' },
-    { id: 'miles-driven', title: 'Miles Driven', category: 'transportation', newData: false, stat: '1.7% decrease', statDesc: 'in per capita VMT' },
-    { id: 'mortgage-lending', title: 'Mortgage Lending', category: 'economy', newData: false, stat: '9.4% increase', statDesc: 'in loan approvals' },
-    { id: 'pavement-conditions', title: 'Pavement Conditions', category: 'transportation', newData: false, stat: '6.8% improvement', statDesc: 'in surface quality' },
-    { id: 'population-growth', title: 'Population Growth', category: 'community', newData: false, stat: '1.2% annual growth', statDesc: 'in regional population' },
-    { id: 'transit-conditions', title: 'Transit Conditions', category: 'transportation', newData: false, stat: '5.5% improvement', statDesc: 'in system quality' },
-    { id: 'transit-ridership', title: 'Transit Ridership', category: 'transportation', newData: false, stat: '8.7% rise', statDesc: 'in quarterly ridership' },
-    { id: 'transportation-safety', title: 'Transportation Safety', category: 'transportation', newData: false, stat: '11.3% reduction', statDesc: 'in traffic incidents' },
-    { id: 'water-quality', title: 'Water Quality', category: 'environment', newData: false, stat: '7.9% improvement', statDesc: 'in water quality index' },
-    { id: '2050', title: '2050', category: 'sustainability', newData: false, stat: '43% progress', statDesc: 'toward long-term goals' }
+    { id: 'housing-permits', title: 'Housing Permits', category: 'community', newData: false, stat: '18% increase', statDesc: 'in new permits', image: '/api/placeholder/64/64' },
+    { id: 'income', title: 'Income', category: 'equity', newData: false, stat: '3.8% growth', statDesc: 'in median income', image: '/api/placeholder/64/64' },
+    { id: 'job-growth', title: 'Job Growth', category: 'economy', newData: false, stat: '12% increase', statDesc: 'in regional employment', image: '/api/placeholder/64/64' },
+    { id: 'labor-force', title: 'Labor Force', category: 'economy', newData: false, stat: '2.1% expansion', statDesc: 'in labor participation', image: '/api/placeholder/64/64' },
+    { id: 'land-consumption', title: 'Land Consumption', category: 'environment', newData: true, stat: '5.3% reduction', statDesc: 'in per capita use', image: '/api/placeholder/64/64' },
+    { id: 'miles-driven', title: 'Miles Driven', category: 'transportation', newData: false, stat: '1.7% decrease', statDesc: 'in per capita VMT', image: '/api/placeholder/64/64' },
+    { id: 'mortgage-lending', title: 'Mortgage Lending', category: 'economy', newData: false, stat: '9.4% increase', statDesc: 'in loan approvals', image: '/api/placeholder/64/64' },
+    { id: 'pavement-conditions', title: 'Pavement Conditions', category: 'transportation', newData: false, stat: '6.8% improvement', statDesc: 'in surface quality', image: '/api/placeholder/64/64' },
+    { id: 'population-growth', title: 'Population Growth', category: 'community', newData: false, stat: '1.2% annual growth', statDesc: 'in regional population', image: '/api/placeholder/64/64' },
+    { id: 'transit-conditions', title: 'Transit Conditions', category: 'transportation', newData: false, stat: '5.5% improvement', statDesc: 'in system quality', image: '/api/placeholder/64/64' },
+    { id: 'transit-ridership', title: 'Transit Ridership', category: 'transportation', newData: false, stat: '8.7% rise', statDesc: 'in quarterly ridership', image: '/api/placeholder/64/64' },
+    { id: 'transportation-safety', title: 'Transportation Safety', category: 'transportation', newData: false, stat: '11.3% reduction', statDesc: 'in traffic incidents', image: '/api/placeholder/64/64' },
+    { id: 'water-quality', title: 'Water Quality', category: 'environment', newData: false, stat: '7.9% improvement', statDesc: 'in water quality index', image: '/api/placeholder/64/64' },
+    { id: '2050', title: '2050', category: 'sustainability', newData: false, stat: '43% progress', statDesc: 'toward long-term goals', image: '/api/placeholder/64/64' }
   ];
 
   // All indicators remain in the grid, but we'll visually filter them
@@ -145,6 +159,18 @@ const TrackingProgressApp = () => {
     else if (selectedIndicator === 'miles-driven') {
       return <MilesDrivenChart />;
     }
+    else if (selectedIndicator === 'pavement-conditions') {
+      return <PavementConditionsChart />;
+    }
+    else if (selectedIndicator === 'transit-conditions') {
+      return <TransitConditionsChart />;
+    }
+    else if (selectedIndicator === 'transit-ridership') {
+      return <TransitRidershipChart />;
+    }
+    else if (selectedIndicator === 'transportation-safety') {
+      return <TransportationSafetyChart />;
+    }
 
     // For other indicators that don't have specific detail components yet
     const indicator = indicators.find(ind => ind.id === selectedIndicator);
@@ -153,15 +179,20 @@ const TrackingProgressApp = () => {
     return (
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="flex items-center justify-between mb-4">
-          <h2 className=" ">{indicator.title}</h2>
-          <div className=" text-white px-3 py-1 rounded-full">
+          <h2 className="text-xl font-bold">{indicator.title}</h2>
+          <div className="bg-teal-600 text-white px-3 py-1 rounded-full">
             {indicator.category.charAt(0).toUpperCase() + indicator.category.slice(1)}
           </div>
         </div>
 
         <div className="flex items-center mb-6">
+          <img
+            src={indicator.image}
+            alt={indicator.title}
+            className="w-16 h-16 mr-4"
+          />
           <div className="bg-teal-100 text-teal-800 px-4 py-2 rounded-md flex items-center">
-            <div className=" font-bold mr-2">{indicator.stat}</div>
+            <div className="text-lg font-bold mr-2">{indicator.stat}</div>
             <div className="text-sm">{indicator.statDesc}</div>
           </div>
         </div>
@@ -188,7 +219,7 @@ const TrackingProgressApp = () => {
         <div className="container mx-auto px-4 py-2">
           <div className="flex justify-between items-center">
             <button onClick={() => { }} className="text-teal-600 font-bold text-xl">
-              TRACKING PROGRESS
+              TCAMPO Performance Dashboard
             </button>
             <div className="flex space-x-4">
               {/* <button className="px-4 py-2 border-2 border-teal-600 text-teal-600 font-medium">
@@ -246,15 +277,11 @@ const TrackingProgressApp = () => {
                       opacity: selectedCategory === 'all' || selectedCategory === category.id ? 1 : 0.7
                     }}
                   >
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      fill="none"
-                    >
-                      <circle cx="12" cy="12" r="10"></circle>
-                    </svg>
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="w-8 mr-2"
+                    />
                     {category.name}
                   </button>
                 </li>
@@ -291,8 +318,12 @@ const TrackingProgressApp = () => {
                         </div>
                       )}
                       <div className={`w-12 h-12 mb-1 flex items-center justify-center ${isDisabled ? 'opacity-50' : ''}`}>
-                        {/* Simple icon placeholder */}
-                        {indicator.id.substring(0, 1).toUpperCase()}
+                        {/* Replace icon placeholder with image placeholder */}
+                        <img
+                          src={indicator.image}
+                          alt={indicator.title}
+                          className="w-10 h-10"
+                        />
                       </div>
                       <div className="text-xs text-center font-medium">
                         {indicator.title}
@@ -306,8 +337,6 @@ const TrackingProgressApp = () => {
                         <div className="text-xs text-center">
                           {indicator.statDesc}
                         </div>
-
-
                       </div>
                     </button>
                   );
