@@ -399,8 +399,8 @@ const EnhancedBridgeConditionsChart = () => {
                             <button
                                 key={ownership}
                                 className={`metric-button ${currentOwnership === ownership
-                                        ? 'selected secondary'
-                                        : 'unselected'
+                                    ? 'selected secondary'
+                                    : 'unselected'
                                     }`}
                                 onClick={() => applyOwnership(ownership)}
                             >
@@ -413,7 +413,7 @@ const EnhancedBridgeConditionsChart = () => {
 
             <div className="chart-section mb-4">
                 <label className="chart-label">
-                    Select Jurisdictions to Compare:
+                    Select County to Compare:
                 </label>
                 <div className="flex flex-wrap gap-2">
                     {getJurisdictions().map((jurisdiction, index) => {
