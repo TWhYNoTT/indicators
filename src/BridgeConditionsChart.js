@@ -7,13 +7,22 @@ const EnhancedBridgeConditionsChart = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedMetrics, setSelectedMetrics] = useState(['MPO- All']);
-    const [viewType, setViewType] = useState('trend'); // 'trend' or 'comparison'
-    const [selectedYear, setSelectedYear] = useState(null);
-    const [showLocalOwnership, setShowLocalOwnership] = useState(false);
+    const [currentOwnership, setCurrentOwnership] = useState('All');
     const chartRef = useRef(null);
 
-    // Color scale for metrics
-    const colors = ['#008485', '#d97706', '#be123c', '#1d4ed8', '#15803d'];
+    // DVRPC color palette from Tailwind config
+    const colors = [
+        '#008485', // dvrpc-teal
+        '#d97706', // dvrpc-orange
+        '#be123c', // dvrpc-red
+        '#1d4ed8', // dvrpc-blue
+        '#15803d', // dvrpc-green
+        '#7e22ce', // dvrpc-purple
+        '#d946ef', // pink
+        '#84cc16', // lime
+        '#f97316', // orange
+        '#6b7280'  // gray
+    ];
 
     // Jurisdiction codes and their full names for better labeling
     const jurisdictionMap = {
@@ -33,6 +42,9 @@ const EnhancedBridgeConditionsChart = () => {
         'Local': 'Locally-Owned',
         'Other': 'Other Ownership'
     };
+
+    // Available ownership types for selection
+    const ownershipTypes = ['All', 'State', 'Local', 'Other'];
 
     // Parse the CSV data
     useEffect(() => {
@@ -66,11 +78,6 @@ const EnhancedBridgeConditionsChart = () => {
             // Parse CSV data
             const parsedData = d3.csvParse(csvData, d3.autoType);
             setData(parsedData);
-
-            // Set the most recent year as the default for comparison view
-            const latestYear = d3.max(parsedData, d => d.year);
-            setSelectedYear(latestYear);
-
             setLoading(false);
         } catch (err) {
             setError(`Error parsing data: ${err.message}`);
@@ -78,80 +85,55 @@ const EnhancedBridgeConditionsChart = () => {
         }
     }, []);
 
-    // Toggle a metric selection
-    const toggleMetric = (metric) => {
-        if (selectedMetrics.includes(metric)) {
-            // Only remove if it's not the only selected metric
-            if (selectedMetrics.length > 1) {
-                setSelectedMetrics(selectedMetrics.filter(m => m !== metric));
-            }
-        } else {
-            // Add metric if not already selected (limit to 5)
-            if (selectedMetrics.length < 5) {
-                setSelectedMetrics([...selectedMetrics, metric]);
-            }
-        }
-    };
-
-    // Toggle view type between trend and comparison
-    const toggleViewType = () => {
-        setViewType(viewType === 'trend' ? 'comparison' : 'trend');
-    };
-
-    // Toggle between showing only "All" ownership or all ownership types
-    const toggleOwnershipView = () => {
-        setShowLocalOwnership(!showLocalOwnership);
-    };
-
-    // Change selected year for comparison view
-    const changeSelectedYear = (year) => {
-        setSelectedYear(year);
-    };
-
-    // Get metrics organized by jurisdiction and ownership
-    const getOrganizedMetrics = () => {
+    // Get all available jurisdictions from the data
+    const getJurisdictions = useCallback(() => {
         if (data.length === 0) return [];
 
         // Get all column names except 'year'
-        const metrics = Object.keys(data[0]).filter(key => key !== 'year');
+        const columns = Object.keys(data[0]).filter(key => key !== 'year');
 
-        // Group metrics by jurisdiction
-        const groupedMetrics = {};
+        // Extract unique jurisdictions
+        const jurisdictions = [...new Set(columns.map(col => {
+            const [jurisdiction, _] = col.split('-');
+            return jurisdiction;
+        }))];
 
-        metrics.forEach(metric => {
-            // Parse the metric name to get jurisdiction and ownership
-            const [jurisdiction, ownership] = metric.split('-');
+        return jurisdictions;
+    }, [data]);
 
-            if (!groupedMetrics[jurisdiction]) {
-                groupedMetrics[jurisdiction] = [];
+    // Toggle a jurisdiction selection
+    const toggleJurisdiction = useCallback((jurisdiction) => {
+        const metric = `${jurisdiction}-${currentOwnership}`;
+
+        // Check if this jurisdiction is already selected (with any ownership)
+        const isJurisdictionSelected = selectedMetrics.some(m => m.startsWith(`${jurisdiction}-`));
+
+        if (isJurisdictionSelected) {
+            // Only remove if it's not the only selected metric
+            if (selectedMetrics.length > 1) {
+                setSelectedMetrics(selectedMetrics.filter(m => !m.startsWith(`${jurisdiction}-`)));
             }
+        } else {
+            // Add this jurisdiction with current ownership
+            setSelectedMetrics([...selectedMetrics, metric]);
+        }
+    }, [selectedMetrics, currentOwnership]);
 
-            groupedMetrics[jurisdiction].push({
-                value: metric,
-                ownership: ownership,
-                label: `${jurisdictionMap[jurisdiction] || jurisdiction}: ${ownershipMap[ownership] || ownership}`
-            });
-        });
+    // Apply ownership type to all selected jurisdictions
+    const applyOwnership = useCallback((ownership) => {
+        // Get the unique jurisdictions from currently selected metrics
+        const selectedJurisdictions = [...new Set(selectedMetrics.map(metric => {
+            const [jurisdiction, _] = metric.split('-');
+            return jurisdiction;
+        }))];
 
-        return groupedMetrics;
-    };
+        // Create new metrics with the selected ownership type
+        const newMetrics = selectedJurisdictions.map(jurisdiction => `${jurisdiction}-${ownership}`);
 
-    // Get filtered metrics based on selected view
-    const getFilteredMetrics = () => {
-        const groupedMetrics = getOrganizedMetrics();
-        const result = [];
-
-        Object.keys(groupedMetrics).forEach(jurisdiction => {
-            // If not showing local ownership details, only include "All" metrics
-            const filtered = showLocalOwnership
-                ? groupedMetrics[jurisdiction]
-                : groupedMetrics[jurisdiction].filter(m => m.ownership === 'All');
-
-            result.push(...filtered);
-        });
-
-        return result;
-    };
+        // Update current ownership and selected metrics
+        setCurrentOwnership(ownership);
+        setSelectedMetrics(newMetrics);
+    }, [selectedMetrics]);
 
     // Render trend chart (line chart over time)
     const renderTrendChart = useCallback(() => {
@@ -222,8 +204,17 @@ const EnhancedBridgeConditionsChart = () => {
                 .tickFormat('')
             );
 
+        // Create a map for consistent color assignment
+        const jurisdictionColorMap = {};
+        getJurisdictions().forEach((jurisdiction, i) => {
+            jurisdictionColorMap[jurisdiction] = colors[i % colors.length];
+        });
+
         // Draw a line for each selected metric
-        selectedMetrics.forEach((metric, i) => {
+        selectedMetrics.forEach((metric) => {
+            const [jurisdiction, _] = metric.split('-');
+            const color = jurisdictionColorMap[jurisdiction];
+
             // Create line
             const line = d3.line()
                 .x(d => xScale(d.year))
@@ -235,33 +226,33 @@ const EnhancedBridgeConditionsChart = () => {
             svg.append('path')
                 .datum(data.filter(d => d[metric] !== null && d[metric] !== undefined))
                 .attr('fill', 'none')
-                .attr('stroke', colors[i])
-                .attr('stroke-width', i === 0 ? 3 : 2)
-                .attr('stroke-dasharray', i === 0 ? null : '3,3')
+                .attr('stroke', color)
+                .attr('stroke-width', 2)
                 .attr('d', line);
 
             // Add dots
-            svg.selectAll(`.dot-${i}`)
+            svg.selectAll(`.dot-${metric.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '')}`)
                 .data(data.filter(d => d[metric] !== null && d[metric] !== undefined))
                 .enter()
                 .append('circle')
-                .attr('class', `dot dot-${i}`)
+                .attr('class', 'dot')
                 .attr('cx', d => xScale(d.year))
                 .attr('cy', d => yScale(d[metric]))
-                .attr('r', i === 0 ? 4 : 3)
-                .attr('fill', colors[i])
+                .attr('r', 3)
+                .attr('fill', color)
                 .attr('stroke', 'white')
-                .attr('stroke-width', 1)
-                .attr('data-metric', metric);
+                .attr('stroke-width', 1);
         });
 
         // Add a legend
         const legend = svg.append('g')
+            .attr('class', 'chart-legend')
             .attr('transform', `translate(${width + 10}, 0)`);
 
         selectedMetrics.forEach((metric, i) => {
             const [jurisdiction, ownership] = metric.split('-');
             const label = `${jurisdictionMap[jurisdiction] || jurisdiction}: ${ownershipMap[ownership] || ownership}`;
+            const color = jurisdictionColorMap[jurisdiction];
 
             const g = legend.append('g')
                 .attr('transform', `translate(0, ${i * 22})`);
@@ -271,9 +262,8 @@ const EnhancedBridgeConditionsChart = () => {
                 .attr('y1', 10)
                 .attr('x2', 20)
                 .attr('y2', 10)
-                .attr('stroke', colors[i])
-                .attr('stroke-width', i === 0 ? 3 : 2)
-                .attr('stroke-dasharray', i === 0 ? null : '3,3');
+                .attr('stroke', color)
+                .attr('stroke-width', 2);
 
             g.append('text')
                 .attr('x', 25)
@@ -292,7 +282,7 @@ const EnhancedBridgeConditionsChart = () => {
             .style('border-radius', '4px')
             .style('padding', '8px')
             .style('font-size', '12px')
-            .style('box-shadow', '0 2px 4px rgba(0,0,0,0.1)')
+            .style('box-shadow', '0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06)')
             .style('pointer-events', 'none')
             .style('opacity', 0);
 
@@ -319,16 +309,18 @@ const EnhancedBridgeConditionsChart = () => {
                 tooltip.style('opacity', 1);
                 verticalLine.style('opacity', 1);
 
-                // Highlight dots
+                // Highlight all dots
                 svg.selectAll('.dot')
+                    .style('r', 4)
                     .style('stroke-width', 2);
             })
             .on('mouseout', () => {
                 tooltip.style('opacity', 0);
                 verticalLine.style('opacity', 0);
 
-                // Reset dots
+                // Reset all dots
                 svg.selectAll('.dot')
+                    .style('r', 3)
                     .style('stroke-width', 1);
             })
             .on('mousemove', function (event) {
@@ -355,12 +347,13 @@ const EnhancedBridgeConditionsChart = () => {
                 // Build tooltip content
                 let tooltipContent = `<div style="font-weight: bold; margin-bottom: 5px;">Year: ${d.year}</div>`;
 
-                selectedMetrics.forEach((metric, idx) => {
+                selectedMetrics.forEach((metric) => {
                     if (d[metric] !== undefined && d[metric] !== null) {
                         const [jurisdiction, ownership] = metric.split('-');
+                        const color = jurisdictionColorMap[jurisdiction];
                         tooltipContent += `
                             <div style="display: flex; align-items: center; margin-top: 3px;">
-                                <div style="width: 8px; height: 8px; background: ${colors[idx]}; margin-right: 5px;"></div>
+                                <div style="width: 8px; height: 8px; background: ${color}; margin-right: 5px;"></div>
                                 <span>${jurisdictionMap[jurisdiction] || jurisdiction}: ${ownershipMap[ownership] || ownership} - ${d3.format('.1%')(d[metric])}</span>
                             </div>
                         `;
@@ -374,164 +367,17 @@ const EnhancedBridgeConditionsChart = () => {
                     .style('top', `${event.pageY - 28}px`);
             });
 
-    }, [data, selectedMetrics, colors, jurisdictionMap, ownershipMap]);
-
-    // Render comparison chart (bar chart for specific year)
-    const renderComparisonChart = useCallback(() => {
-        if (!chartRef.current || data.length === 0 || !selectedYear) return;
-
-        // Clear previous chart
-        d3.select(chartRef.current).selectAll('*').remove();
-
-        // Get data for the selected year
-        const yearData = data.find(d => d.year === selectedYear);
-        if (!yearData) return;
-
-        // Set up chart dimensions
-        const margin = { top: 30, right: 80, bottom: 80, left: 60 };
-        const width = 700 - margin.left - margin.right;
-        const height = 400 - margin.top - margin.bottom;
-
-        // Create SVG
-        const svg = d3.select(chartRef.current)
-            .append('svg')
-            .attr('width', width + margin.left + margin.right)
-            .attr('height', height + margin.top + margin.bottom)
-            .append('g')
-            .attr('transform', `translate(${margin.left},${margin.top})`);
-
-        // Prepare data for selected metrics
-        const chartData = selectedMetrics.map(metric => {
-            const [jurisdiction, ownership] = metric.split('-');
-            return {
-                metric,
-                jurisdiction,
-                ownership,
-                label: `${jurisdictionMap[jurisdiction] || jurisdiction}: ${ownershipMap[ownership] || ownership}`,
-                value: yearData[metric]
-            };
-        }).filter(d => d.value !== null && d.value !== undefined);
-
-        // Sort data by value
-        chartData.sort((a, b) => a.value - b.value);
-
-        // Set up scales
-        const xScale = d3.scaleLinear()
-            .domain([0, d3.max(chartData, d => d.value) * 1.1])
-            .range([0, width]);
-
-        const yScale = d3.scaleBand()
-            .domain(chartData.map(d => d.metric))
-            .range([0, height])
-            .padding(0.3);
-
-        // Add Y axis
-        svg.append('g')
-            .call(d3.axisLeft(yScale).tickFormat(d => {
-                const [jurisdiction, ownership] = d.split('-');
-                return `${jurisdictionMap[jurisdiction] || jurisdiction}: ${ownershipMap[ownership] || ownership}`;
-            }));
-
-        // Add X axis
-        svg.append('g')
-            .attr('transform', `translate(0,${height})`)
-            .call(d3.axisBottom(xScale).tickFormat(d => d3.format('.1%')(d)));
-
-        // Add X axis label
-        svg.append('text')
-            .attr('transform', `translate(${width / 2},${height + 35})`)
-            .style('text-anchor', 'middle')
-            .style('fill', '#666')
-            .text('Bridge Deficiency Rate');
-
-        // Add title
-        svg.append('text')
-            .attr('x', width / 2)
-            .attr('y', -10)
-            .attr('text-anchor', 'middle')
-            .style('font-size', '14px')
-            .style('font-weight', 'bold')
-            .text(`Bridge Deficiency Comparison (${selectedYear})`);
-
-        // Add grid lines
-        svg.append('g')
-            .attr('class', 'grid')
-            .style('stroke-dasharray', '3,3')
-            .style('opacity', 0.2)
-            .call(d3.axisBottom(xScale)
-                .tickSize(height)
-                .tickFormat('')
-            );
-
-        // Create bars
-        svg.selectAll('.bar')
-            .data(chartData)
-            .enter()
-            .append('rect')
-            .attr('class', 'bar')
-            .attr('y', d => yScale(d.metric))
-            .attr('x', 0)
-            .attr('height', yScale.bandwidth())
-            .attr('width', d => xScale(d.value))
-            .attr('fill', (d, i) => colors[i % colors.length])
-            .on('mouseover', function (event, d) {
-                // Highlight bar
-                d3.select(this).attr('opacity', 0.8);
-
-                // Show tooltip
-                d3.select(chartRef.current)
-                    .append('div')
-                    .attr('class', 'tooltip')
-                    .style('position', 'absolute')
-                    .style('background-color', 'white')
-                    .style('border', '1px solid #666')
-                    .style('border-radius', '4px')
-                    .style('padding', '8px')
-                    .style('font-size', '12px')
-                    .style('box-shadow', '0 2px 4px rgba(0,0,0,0.1)')
-                    .style('pointer-events', 'none')
-                    .style('left', `${event.pageX + 10}px`)
-                    .style('top', `${event.pageY - 28}px`)
-                    .html(`
-                        <div>${d.label}</div>
-                        <div>Deficiency Rate: ${d3.format('.1%')(d.value)}</div>
-                    `);
-            })
-            .on('mouseout', function () {
-                // Reset bar highlight
-                d3.select(this).attr('opacity', 1);
-
-                // Remove tooltip
-                d3.select(chartRef.current).selectAll('.tooltip').remove();
-            });
-
-        // Add value labels
-        svg.selectAll('.value-label')
-            .data(chartData)
-            .enter()
-            .append('text')
-            .attr('class', 'value-label')
-            .attr('y', d => yScale(d.metric) + yScale.bandwidth() / 2 + 4)
-            .attr('x', d => xScale(d.value) + 5)
-            .style('font-size', '11px')
-            .style('fill', '#333')
-            .text(d => d3.format('.1%')(d.value));
-
-    }, [data, selectedMetrics, selectedYear, colors, jurisdictionMap, ownershipMap]);
+    }, [data, selectedMetrics, colors, jurisdictionMap, ownershipMap, getJurisdictions]);
 
     // Render chart when data or selections change
     useEffect(() => {
         if (data.length > 0 && !loading) {
-            if (viewType === 'trend') {
-                renderTrendChart();
-            } else {
-                renderComparisonChart();
-            }
+            renderTrendChart();
         }
-    }, [data, selectedMetrics, selectedYear, viewType, loading, renderTrendChart, renderComparisonChart]);
+    }, [data, selectedMetrics, loading, renderTrendChart]);
 
     if (loading) {
-        return <div className="flex items-center justify-center h-64">Loading bridge conditions data...</div>;
+        return <div className="flex items-center justify-center h-64 animate-pulse">Loading bridge conditions data...</div>;
     }
 
     if (error) {
@@ -540,109 +386,80 @@ const EnhancedBridgeConditionsChart = () => {
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold text-teal-700 mb-4">Bridge Deficiency Dashboard</h2>
+            <h2 className="chart-title">Bridge Deficiency Dashboard</h2>
 
-            <div className="mb-4 flex flex-wrap gap-4">
+            <div className="chart-section mb-4">
+                {/* Ownership filter section with proper styling */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        View Type:
+                    <label className="chart-label">
+                        Bridge Ownership:
                     </label>
-                    <div className="flex gap-2">
-                        <button
-                            className={`px-4 py-2 rounded ${viewType === 'trend' ? 'bg-teal-600 text-white' : 'bg-gray-200'}`}
-                            onClick={() => setViewType('trend')}
-                        >
-                            Trend Over Time
-                        </button>
-                        <button
-                            className={`px-4 py-2 rounded ${viewType === 'comparison' ? 'bg-teal-600 text-white' : 'bg-gray-200'}`}
-                            onClick={() => setViewType('comparison')}
-                        >
-                            Regional Comparison
-                        </button>
+                    <div className="flex flex-wrap gap-2">
+                        {ownershipTypes.map(ownership => (
+                            <button
+                                key={ownership}
+                                className={`metric-button ${currentOwnership === ownership
+                                        ? 'selected secondary'
+                                        : 'unselected'
+                                    }`}
+                                onClick={() => applyOwnership(ownership)}
+                            >
+                                {ownershipMap[ownership]}
+                            </button>
+                        ))}
                     </div>
-                </div>
-
-                {viewType === 'comparison' && (
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Select Year:
-                        </label>
-                        <select
-                            className="w-32 p-2 border border-gray-300 rounded"
-                            value={selectedYear}
-                            onChange={(e) => changeSelectedYear(Number(e.target.value))}
-                        >
-                            {data.map(d => (
-                                <option key={d.year} value={d.year}>
-                                    {d.year}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                )}
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Ownership Details:
-                    </label>
-                    <button
-                        className={`px-4 py-2 rounded ${showLocalOwnership ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-                        onClick={toggleOwnershipView}
-                    >
-                        {showLocalOwnership ? 'Show Combined Only' : 'Show Ownership Details'}
-                    </button>
                 </div>
             </div>
 
-            <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Metrics to Compare (max 5):
+            <div className="chart-section mb-4">
+                <label className="chart-label">
+                    Select Jurisdictions to Compare:
                 </label>
                 <div className="flex flex-wrap gap-2">
-                    {getFilteredMetrics().map(option => (
-                        <button
-                            key={option.value}
-                            className={`px-3 py-1 text-xs rounded-full ${selectedMetrics.includes(option.value)
-                                ? 'text-white'
-                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                                }`}
-                            style={{
-                                backgroundColor: selectedMetrics.includes(option.value)
-                                    ? colors[selectedMetrics.indexOf(option.value) % colors.length]
-                                    : undefined
-                            }}
-                            onClick={() => toggleMetric(option.value)}
-                        >
-                            {option.label}
-                        </button>
-                    ))}
+                    {getJurisdictions().map((jurisdiction, index) => {
+                        // Check if this jurisdiction is already selected (with any ownership)
+                        const isSelected = selectedMetrics.some(m => m.startsWith(`${jurisdiction}-`));
+                        const color = colors[index % colors.length];
+
+                        return (
+                            <button
+                                key={jurisdiction}
+                                className={`metric-button ${isSelected ? 'selected primary' : 'unselected'}`}
+                                style={{
+                                    backgroundColor: isSelected ? color : undefined
+                                }}
+                                onClick={() => toggleJurisdiction(jurisdiction)}
+                            >
+                                {jurisdictionMap[jurisdiction] || jurisdiction}
+                            </button>
+                        );
+                    })}
                 </div>
                 {selectedMetrics.length > 1 && (
                     <button
                         className="mt-2 text-xs text-red-600 hover:text-red-800"
-                        onClick={() => setSelectedMetrics(selectedMetrics.slice(0, 1))}
+                        onClick={() => setSelectedMetrics(['MPO- All'])}
                     >
-                        Clear comparison metrics
+                        Reset to Regional Average Only
                     </button>
                 )}
             </div>
 
-            <div className="chart-container border border-gray-200 rounded p-4 bg-gray-50" ref={chartRef}></div>
+            <div className="chart-container border border-gray-200 rounded p-4 bg-gray-50 min-h-80" ref={chartRef}></div>
 
-            <div className="mt-6 p-4 bg-gray-50 rounded-md">
+            <div className="chart-section mt-6">
                 <h3 className="font-medium text-gray-800 mb-2">About This Data</h3>
                 <p className="text-sm text-gray-600 mb-2">
                     The Bridge Deficiency Rate measures the percentage of bridges that are classified as structurally
                     deficient. Lower values represent better bridge conditions in the region.
                 </p>
-                {viewType === 'trend' && (
-                    <p className="text-sm text-gray-600">
-                        From 2000 to 2023, the overall trend shows an improvement (reduction) in bridge deficiency rates
-                        across most jurisdictions, indicating infrastructure improvements over time.
-                    </p>
-                )}
-                {showLocalOwnership && (
+
+                <p className="text-sm text-gray-600">
+                    From 2000 to 2023, the overall trend shows an improvement (reduction) in bridge deficiency rates
+                    across most jurisdictions, indicating infrastructure improvements over time.
+                </p>
+
+                {currentOwnership === 'Local' && (
                     <p className="text-sm text-gray-600 mt-2">
                         <strong>Note:</strong> Locally-owned bridges typically show higher deficiency rates than state-owned
                         bridges, which may reflect differences in maintenance resources and funding.
