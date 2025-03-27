@@ -1,67 +1,37 @@
-/** @type {import('tailwindcss').Config} */
+// tailwind.config.js
 module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
-    "./public/index.html"
   ],
   theme: {
     extend: {
       colors: {
-        // DVRPC colors
-        'dvrpc-teal': '#008485',
-        'dvrpc-orange': '#d97706',
-        'dvrpc-red': '#be123c',
-        'dvrpc-blue': '#1d4ed8',
-        'dvrpc-green': '#15803d',
-        'dvrpc-purple': '#7e22ce',
-      },
-      spacing: {
-        'chart-height': '400px',
-        'chart-width': '100%',
-      },
-      boxShadow: {
-        'tooltip': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-      },
-      borderRadius: {
-        'tooltip': '4px',
-      },
-      fontSize: {
-        'chart-title': '1.25rem',
-        'chart-label': '0.875rem',
-        'chart-value': '0.75rem',
-      },
-      fontWeight: {
-        'chart-title': '700',
-        'chart-label': '600',
-      },
-      animation: {
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-      },
-      transitionProperty: {
-        'tooltip': 'opacity, transform',
-      },
-      transitionDuration: {
-        '150': '150ms',
+        primary: {
+          50: '#f0f9ff',
+          100: '#e0f2fe',
+          200: '#bae6fd',
+          300: '#7dd3fc',
+          400: '#38bdf8',
+          500: '#0ea5e9',
+          600: '#0284c7',
+          700: '#0369a1',
+          800: '#075985',
+          900: '#0c4a6e',
+        },
+        secondary: {
+          50: '#f0fdfa',
+          100: '#ccfbf1',
+          200: '#99f6e4',
+          300: '#5eead4',
+          400: '#2dd4bf',
+          500: '#14b8a6',
+          600: '#0d9488',
+          700: '#0f766e',
+          800: '#115e59',
+          900: '#134e4a',
+        },
       },
     },
   },
   plugins: [],
-  // This ensures Tailwind doesn't purge styles we need for the chart
-  safelist: [
-    'bg-teal-600',
-    'bg-blue-600',
-    'bg-orange-500',
-    'bg-red-600',
-    'bg-green-600',
-    'text-teal-600',
-    'text-blue-600',
-    'text-orange-500',
-    'text-red-600',
-    'text-green-600',
-    'border-teal-600',
-    'border-blue-600',
-    'border-orange-500',
-    'border-red-600',
-    'border-green-600',
-  ]
-};
+}
