@@ -357,4 +357,4 @@ const AirQualityTrends = () => {
     );
 };
 
-export default AirQualityTrends;
+export default AirQualityTrends; 

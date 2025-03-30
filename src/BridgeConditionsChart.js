@@ -484,4 +484,5 @@ const BridgeConditionTrend = () => {
     );
 };
 
+
 export default BridgeConditionTrend;
