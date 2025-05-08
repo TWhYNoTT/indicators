@@ -6,10 +6,11 @@ const EnhancedBridgeConditionsChart = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedMetrics, setSelectedMetrics] = useState(['MPO- All']);
+    const [selectedMetrics, setSelectedMetrics] = useState(['MPO-All']);
     const [currentOwnership, setCurrentOwnership] = useState('All');
+    const [currentValueType, setCurrentValueType] = useState('bridge_count');
     const chartRef = useRef(null);
-
+    
     // DVRPC color palette from Tailwind config
     const colors = [
         '#008485', // dvrpc-teal
@@ -43,12 +44,18 @@ const EnhancedBridgeConditionsChart = () => {
         'Other': 'Other Ownership'
     };
 
+    // Value type options
+    const valueTypeMap = {
+        'bridge_count': 'Share of Total Bridges',
+        'deck_area': 'Share of Total Bridge Deck Area'
+    };
+
     // Available ownership types for selection
     const ownershipTypes = ['All', 'State', 'Local', 'Other'];
 
     // Parse the CSV data
     useEffect(() => {
-        const csvData = `year,MPO- All,MPO- State,MPO- Local,MPO- Other,Colonial Heights-All,Colonial Heights-State,Colonial Heights-Local,Colonial Heights-Other,Petersburg-All,Petersburg-State,Petersburg-Local,Petersburg-Other,Hopewell-All,Hopewell-State,Hopewell-Local,Hopewell-Other,Dinwiddie-All,Dinwiddie-State,Dinwiddie-Local,Dinwiddie-Other,Chesterfield-All,Chesterfield-State,Chesterfield-Local,Chesterfield-Other,Prince George-All,Prince George-State,Prince George-Local,Prince George-Other
+        const csvData = `year,MPO-All,MPO-State,MPO-Local,MPO-Other,Colonial Heights-All,Colonial Heights-State,Colonial Heights-Local,Colonial Heights-Other,Petersburg-All,Petersburg-State,Petersburg-Local,Petersburg-Other,Hopewell-All,Hopewell-State,Hopewell-Local,Hopewell-Other,Dinwiddie-All,Dinwiddie-State,Dinwiddie-Local,Dinwiddie-Other,Chesterfield-All,Chesterfield-State,Chesterfield-Local,Chesterfield-Other,Prince George-All,Prince George-State,Prince George-Local,Prince George-Other
 2000,0.139,0.151,0.254,0.075,0.173,0.157,0.223,0.135,0.191,0.165,0.247,0.208,0.131,0.131,0.179,0.022,0.181,0.159,0.235,0.182,0.244,0.265,0.209,0.2,0.144,0.189,0.147,0.06
 2001,0.15,0.165,0.264,0.076,0.182,0.165,0.234,0.135,0.203,0.178,0.261,0.209,0.129,0.125,0.182,0.022,0.191,0.165,0.256,0.183,0.232,0.246,0.222,0.169,0.137,0.171,0.146,0.06
 2002,0.163,0.183,0.27,0.076,0.195,0.184,0.238,0.139,0.222,0.202,0.272,0.216,0.129,0.13,0.175,0.022,0.213,0.192,0.273,0.19,0.249,0.265,0.241,0.169,0.143,0.18,0.152,0.06
@@ -74,10 +81,44 @@ const EnhancedBridgeConditionsChart = () => {
 2022,0.073,0.077,0.195,0.015,0.125,0.107,0.185,0.055,0.143,0.111,0.221,0.098,0.08,0.094,0.102,0.012,0.144,0.114,0.221,0.085,0.174,0.148,0.25,0.14,0.112,0.138,0.148,0.022
 2023,0.058,0.063,0.19,0.011,0.121,0.105,0.176,0.054,0.138,0.108,0.211,0.099,0.079,0.096,0.096,0.008,0.14,0.113,0.208,0.084,0.169,0.146,0.24,0.136,0.11,0.138,0.142,0.022`;
 
+        // Mock data for deck area - slightly different values to simulate the difference
+        const deckAreaCsvData = `year,MPO-All,MPO-State,MPO-Local,MPO-Other,Colonial Heights-All,Colonial Heights-State,Colonial Heights-Local,Colonial Heights-Other,Petersburg-All,Petersburg-State,Petersburg-Local,Petersburg-Other,Hopewell-All,Hopewell-State,Hopewell-Local,Hopewell-Other,Dinwiddie-All,Dinwiddie-State,Dinwiddie-Local,Dinwiddie-Other,Chesterfield-All,Chesterfield-State,Chesterfield-Local,Chesterfield-Other,Prince George-All,Prince George-State,Prince George-Local,Prince George-Other
+2000,0.159,0.171,0.274,0.095,0.193,0.177,0.243,0.155,0.211,0.185,0.267,0.228,0.151,0.151,0.199,0.042,0.201,0.179,0.255,0.202,0.264,0.285,0.229,0.22,0.164,0.209,0.167,0.08
+2001,0.17,0.185,0.284,0.096,0.202,0.185,0.254,0.155,0.223,0.198,0.281,0.229,0.149,0.145,0.202,0.042,0.211,0.185,0.276,0.203,0.252,0.266,0.242,0.189,0.157,0.191,0.166,0.08
+2002,0.183,0.203,0.29,0.096,0.215,0.204,0.258,0.159,0.242,0.222,0.292,0.236,0.149,0.15,0.195,0.042,0.233,0.212,0.293,0.21,0.269,0.285,0.261,0.189,0.163,0.2,0.172,0.08
+2003,0.197,0.228,0.253,0.096,0.216,0.209,0.25,0.167,0.248,0.23,0.292,0.245,0.137,0.143,0.17,0.052,0.238,0.219,0.294,0.216,0.275,0.293,0.256,0.205,0.145,0.176,0.149,0.088
+2004,0.19,0.22,0.255,0.092,0.219,0.213,0.251,0.169,0.25,0.234,0.291,0.252,0.143,0.15,0.177,0.051,0.243,0.224,0.294,0.228,0.292,0.313,0.273,0.205,0.152,0.188,0.159,0.085
+2005,0.186,0.212,0.261,0.094,0.222,0.211,0.265,0.175,0.256,0.233,0.311,0.258,0.141,0.143,0.179,0.052,0.252,0.228,0.316,0.235,0.302,0.323,0.287,0.205,0.149,0.182,0.152,0.089
+2006,0.188,0.216,0.259,0.094,0.221,0.212,0.26,0.172,0.257,0.236,0.309,0.253,0.134,0.136,0.167,0.052,0.254,0.233,0.314,0.229,0.298,0.318,0.281,0.205,0.127,0.148,0.13,0.089
+2007,0.185,0.208,0.272,0.085,0.225,0.215,0.267,0.161,0.264,0.242,0.324,0.236,0.128,0.132,0.158,0.052,0.262,0.241,0.324,0.233,0.309,0.321,0.308,0.232,0.116,0.132,0.117,0.089
+2008,0.182,0.202,0.275,0.093,0.229,0.219,0.279,0.156,0.273,0.246,0.352,0.242,0.121,0.136,0.14,0.036,0.272,0.243,0.357,0.244,0.324,0.331,0.322,0.282,0.113,0.17,0.097,0.062
+2009,0.181,0.207,0.294,0.068,0.239,0.22,0.311,0.152,0.289,0.247,0.406,0.245,0.116,0.135,0.132,0.025,0.289,0.238,0.432,0.243,0.314,0.306,0.36,0.251,0.104,0.151,0.104,0.034
+2010,0.172,0.194,0.31,0.059,0.238,0.217,0.318,0.141,0.286,0.243,0.41,0.224,0.12,0.133,0.142,0.03,0.287,0.235,0.44,0.219,0.311,0.299,0.372,0.235,0.104,0.123,0.116,0.048
+2011,0.151,0.17,0.284,0.067,0.236,0.208,0.322,0.162,0.282,0.232,0.414,0.255,0.12,0.13,0.147,0.036,0.289,0.23,0.45,0.238,0.329,0.302,0.434,0.242,0.118,0.132,0.135,0.061
+2012,0.132,0.143,0.293,0.055,0.223,0.186,0.328,0.141,0.262,0.204,0.416,0.221,0.124,0.13,0.157,0.036,0.269,0.2,0.453,0.214,0.298,0.253,0.437,0.246,0.109,0.13,0.116,0.062
+2013,0.143,0.128,0.28,0.138,0.216,0.172,0.331,0.148,0.251,0.183,0.42,0.225,0.127,0.136,0.154,0.037,0.258,0.178,0.46,0.223,0.297,0.224,0.502,0.262,0.111,0.121,0.129,0.05
+2014,0.126,0.125,0.285,0.061,0.209,0.166,0.325,0.136,0.245,0.177,0.417,0.213,0.121,0.131,0.145,0.035,0.25,0.171,0.455,0.207,0.285,0.211,0.505,0.21,0.111,0.131,0.12,0.061
+2015,0.115,0.117,0.271,0.049,0.201,0.162,0.311,0.122,0.239,0.173,0.406,0.205,0.109,0.128,0.123,0.037,0.246,0.171,0.44,0.194,0.274,0.203,0.488,0.179,0.098,0.103,0.126,0.042
+2016,0.115,0.116,0.272,0.048,0.2,0.164,0.305,0.12,0.236,0.174,0.393,0.199,0.116,0.132,0.137,0.04,0.242,0.172,0.423,0.191,0.261,0.193,0.465,0.181,0.106,0.13,0.125,0.042
+2017,0.108,0.109,0.261,0.045,0.189,0.158,0.282,0.109,0.221,0.165,0.361,0.186,0.113,0.134,0.13,0.032,0.227,0.167,0.385,0.177,0.243,0.186,0.417,0.156,0.106,0.13,0.126,0.042
+2018,0.101,0.104,0.277,0.041,0.18,0.153,0.264,0.103,0.207,0.157,0.327,0.171,0.116,0.138,0.133,0.032,0.213,0.16,0.344,0.17,0.237,0.19,0.381,0.173,0.112,0.148,0.127,0.042
+2019,0.103,0.101,0.28,0.041,0.169,0.144,0.245,0.095,0.192,0.149,0.299,0.151,0.111,0.128,0.13,0.036,0.196,0.15,0.311,0.143,0.223,0.184,0.342,0.17,0.112,0.139,0.127,0.053
+2020,0.103,0.105,0.264,0.036,0.161,0.142,0.231,0.08,0.184,0.147,0.28,0.126,0.106,0.123,0.126,0.032,0.187,0.149,0.288,0.118,0.223,0.195,0.318,0.156,0.115,0.147,0.135,0.042
+2021,0.1,0.102,0.251,0.035,0.154,0.134,0.22,0.079,0.175,0.139,0.26,0.125,0.103,0.116,0.127,0.032,0.175,0.14,0.261,0.113,0.212,0.183,0.301,0.178,0.124,0.148,0.155,0.042
+2022,0.093,0.097,0.215,0.035,0.145,0.127,0.205,0.075,0.163,0.131,0.241,0.118,0.1,0.114,0.122,0.032,0.164,0.134,0.241,0.105,0.194,0.168,0.27,0.16,0.132,0.158,0.168,0.042
+2023,0.078,0.083,0.21,0.031,0.141,0.125,0.196,0.074,0.158,0.128,0.231,0.119,0.099,0.116,0.116,0.028,0.16,0.133,0.228,0.104,0.189,0.166,0.26,0.156,0.13,0.158,0.162,0.042`;
+
         try {
             // Parse CSV data
-            const parsedData = d3.csvParse(csvData, d3.autoType);
-            setData(parsedData);
+            const bridgeCountData = d3.csvParse(csvData, d3.autoType);
+            const deckAreaData = d3.csvParse(deckAreaCsvData, d3.autoType);
+
+            // Store data with type information
+            setData({
+                bridge_count: bridgeCountData,
+                deck_area: deckAreaData
+            });
+            
             setLoading(false);
         } catch (err) {
             setError(`Error parsing data: ${err.message}`);
@@ -87,10 +128,10 @@ const EnhancedBridgeConditionsChart = () => {
 
     // Get all available jurisdictions from the data
     const getJurisdictions = useCallback(() => {
-        if (data.length === 0) return [];
+        if (!data[currentValueType] || data[currentValueType].length === 0) return [];
 
         // Get all column names except 'year'
-        const columns = Object.keys(data[0]).filter(key => key !== 'year');
+        const columns = Object.keys(data[currentValueType][0]).filter(key => key !== 'year');
 
         // Extract unique jurisdictions
         const jurisdictions = [...new Set(columns.map(col => {
@@ -99,7 +140,7 @@ const EnhancedBridgeConditionsChart = () => {
         }))];
 
         return jurisdictions;
-    }, [data]);
+    }, [data, currentValueType]);
 
     // Toggle a jurisdiction selection
     const toggleJurisdiction = useCallback((jurisdiction) => {
@@ -109,13 +150,14 @@ const EnhancedBridgeConditionsChart = () => {
         const isJurisdictionSelected = selectedMetrics.some(m => m.startsWith(`${jurisdiction}-`));
 
         if (isJurisdictionSelected) {
-            // Only remove if it's not the only selected metric
-            if (selectedMetrics.length > 1) {
-                setSelectedMetrics(selectedMetrics.filter(m => !m.startsWith(`${jurisdiction}-`)));
+            // Only remove if it's not MPO (Regional Average) or not the only selected metric
+            if ((jurisdiction !== 'MPO' && selectedMetrics.length > 1) || 
+                (jurisdiction === 'MPO' && selectedMetrics.length > 1 && !selectedMetrics.every(m => m.startsWith('MPO-')))) {
+                setSelectedMetrics(prev => prev.filter(m => !m.startsWith(`${jurisdiction}-`)));
             }
         } else {
             // Add this jurisdiction with current ownership
-            setSelectedMetrics([...selectedMetrics, metric]);
+            setSelectedMetrics(prev => [...prev, metric]);
         }
     }, [selectedMetrics, currentOwnership]);
 
@@ -127,6 +169,11 @@ const EnhancedBridgeConditionsChart = () => {
             return jurisdiction;
         }))];
 
+        // Make sure 'MPO' (Regional Average) is always included
+        if (!selectedJurisdictions.includes('MPO')) {
+            selectedJurisdictions.push('MPO');
+        }
+
         // Create new metrics with the selected ownership type
         const newMetrics = selectedJurisdictions.map(jurisdiction => `${jurisdiction}-${ownership}`);
 
@@ -135,9 +182,14 @@ const EnhancedBridgeConditionsChart = () => {
         setSelectedMetrics(newMetrics);
     }, [selectedMetrics]);
 
+    // Handle value type change (bridge count vs deck area)
+    const setValueType = useCallback((valueType) => {
+        setCurrentValueType(valueType);
+    }, []);
+
     // Render trend chart (line chart over time)
     const renderTrendChart = useCallback(() => {
-        if (!chartRef.current || data.length === 0) return;
+        if (!chartRef.current || !data[currentValueType] || data[currentValueType].length === 0) return;
 
         // Clear previous chart
         d3.select(chartRef.current).selectAll('*').remove();
@@ -156,13 +208,13 @@ const EnhancedBridgeConditionsChart = () => {
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
         // Find maximum value across all selected metrics
-        const maxValue = d3.max(data, d => {
+        const maxValue = d3.max(data[currentValueType], d => {
             return d3.max(selectedMetrics.map(metric => d[metric] || 0));
         });
 
         // Set up scales with proper domain for all metrics
         const xScale = d3.scaleLinear()
-            .domain(d3.extent(data, d => d.year))
+            .domain(d3.extent(data[currentValueType], d => d.year))
             .range([0, width]);
 
         const yScale = d3.scaleLinear()
@@ -192,7 +244,9 @@ const EnhancedBridgeConditionsChart = () => {
             .attr('x', -height / 2)
             .style('text-anchor', 'middle')
             .style('fill', '#666')
-            .text('Bridge Deficiency Rate');
+            .text(currentValueType === 'bridge_count' 
+                ? 'Percentage of Deficient Bridges' 
+                : 'Percentage of Deficient Bridge Deck Area');
 
         // Add grid lines
         svg.append('g')
@@ -224,7 +278,7 @@ const EnhancedBridgeConditionsChart = () => {
 
             // Add the line
             svg.append('path')
-                .datum(data.filter(d => d[metric] !== null && d[metric] !== undefined))
+                .datum(data[currentValueType].filter(d => d[metric] !== null && d[metric] !== undefined))
                 .attr('fill', 'none')
                 .attr('stroke', color)
                 .attr('stroke-width', 2)
@@ -232,7 +286,7 @@ const EnhancedBridgeConditionsChart = () => {
 
             // Add dots
             svg.selectAll(`.dot-${metric.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '')}`)
-                .data(data.filter(d => d[metric] !== null && d[metric] !== undefined))
+                .data(data[currentValueType].filter(d => d[metric] !== null && d[metric] !== undefined))
                 .enter()
                 .append('circle')
                 .attr('class', 'dot')
@@ -330,13 +384,13 @@ const EnhancedBridgeConditionsChart = () => {
                 // Find nearest year
                 const x0 = xScale.invert(mouseX);
                 const bisect = d3.bisector(d => d.year).left;
-                const i = bisect(data, x0, 1);
+                const i = bisect(data[currentValueType], x0, 1);
 
-                if (i === 0 || i >= data.length) return;
+                if (i === 0 || i >= data[currentValueType].length) return;
 
                 // Find closest data point
-                const d0 = data[i - 1];
-                const d1 = data[i];
+                const d0 = data[currentValueType][i - 1];
+                const d1 = data[currentValueType][i];
                 const d = x0 - d0.year > d1.year - x0 ? d1 : d0;
 
                 // Update vertical line
@@ -367,14 +421,14 @@ const EnhancedBridgeConditionsChart = () => {
                     .style('top', `${event.pageY - 28}px`);
             });
 
-    }, [data, selectedMetrics, colors, jurisdictionMap, ownershipMap, getJurisdictions]);
+    }, [data, selectedMetrics, colors, jurisdictionMap, ownershipMap, getJurisdictions, currentValueType]);
 
     // Render chart when data or selections change
     useEffect(() => {
-        if (data.length > 0 && !loading) {
+        if (data[currentValueType] && data[currentValueType].length > 0 && !loading) {
             renderTrendChart();
         }
-    }, [data, selectedMetrics, loading, renderTrendChart]);
+    }, [data, selectedMetrics, loading, renderTrendChart, currentValueType]);
 
     if (loading) {
         return <div className="flex items-center justify-center h-64 animate-pulse">Loading bridge conditions data...</div>;
@@ -388,34 +442,67 @@ const EnhancedBridgeConditionsChart = () => {
         <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="chart-title">Bridge Deficiency Dashboard</h2>
 
-            <div className="chart-section mb-4">
-                {/* Ownership filter section with proper styling */}
-                <div>
-                    <label className="chart-label">
-                        Bridge Ownership:
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                        {ownershipTypes.map(ownership => (
+            {/* Toggle selectors - replaced with button-style selectors using Tailwind classes */}
+            <div className="toggle-wrapper mb-6">
+                <h2 className="indicator-subheader toggle-subheader text-lg font-semibold mb-2">Percentage of Deficient Bridges by Ownership Type</h2>
+                
+                <div className="chart-section mb-4">
+                    <div>
+                        <label className="chart-label">
+                            Bridge Ownership:
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                            {ownershipTypes.map(ownership => (
+                                <button
+                                    key={ownership}
+                                    className={`metric-button ${currentOwnership === ownership
+                                            ? 'selected secondary'
+                                            : 'unselected'
+                                        }`}
+                                    onClick={() => applyOwnership(ownership)}
+                                >
+                                    {ownershipMap[ownership]}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="chart-section mb-4">
+                    <div>
+                        <label className="chart-label">
+                            Value Type:
+                        </label>
+                        <div className="flex flex-wrap gap-2">
                             <button
-                                key={ownership}
-                                className={`metric-button ${currentOwnership === ownership
+                                className={`metric-button ${currentValueType === 'deck_area'
                                         ? 'selected secondary'
                                         : 'unselected'
                                     }`}
-                                onClick={() => applyOwnership(ownership)}
+                                onClick={() => setValueType('deck_area')}
                             >
-                                {ownershipMap[ownership]}
+                                {valueTypeMap.deck_area}
                             </button>
-                        ))}
+                            <button
+                                className={`metric-button ${currentValueType === 'bridge_count'
+                                        ? 'selected secondary'
+                                        : 'unselected'
+                                    }`}
+                                onClick={() => setValueType('bridge_count')}
+                            >
+                                {valueTypeMap.bridge_count}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
+            {/* Jurisdiction selection buttons */}
             <div className="chart-section mb-4">
                 <label className="chart-label">
                     Select Jurisdictions to Compare:
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-4">
                     {getJurisdictions().map((jurisdiction, index) => {
                         // Check if this jurisdiction is already selected (with any ownership)
                         const isSelected = selectedMetrics.some(m => m.startsWith(`${jurisdiction}-`));
@@ -426,7 +513,7 @@ const EnhancedBridgeConditionsChart = () => {
                                 key={jurisdiction}
                                 className={`metric-button ${isSelected ? 'selected primary' : 'unselected'}`}
                                 style={{
-                                    backgroundColor: isSelected ? color : undefined
+                                    backgroundColor: isSelected ? color : undefined,
                                 }}
                                 onClick={() => toggleJurisdiction(jurisdiction)}
                             >
@@ -438,38 +525,18 @@ const EnhancedBridgeConditionsChart = () => {
                 {selectedMetrics.length > 1 && (
                     <button
                         className="mt-2 text-xs text-red-600 hover:text-red-800"
-                        onClick={() => setSelectedMetrics(['MPO- All'])}
+                        onClick={() => setSelectedMetrics(['MPO-All'])}
                     >
                         Reset to Regional Average Only
                     </button>
                 )}
             </div>
 
-            <div className="chart-container border border-gray-200 rounded p-4 bg-gray-50 min-h-80" ref={chartRef}></div>
-
-            <div className="chart-section mt-6">
-                <h3 className="font-medium text-gray-800 mb-2">About This Data</h3>
-                <p className="text-sm text-gray-600 mb-2">
-                    The Bridge Deficiency Rate measures the percentage of bridges that are classified as structurally
-                    deficient. Lower values represent better bridge conditions in the region.
-                </p>
-
-                <p className="text-sm text-gray-600">
-                    From 2000 to 2023, the overall trend shows an improvement (reduction) in bridge deficiency rates
-                    across most jurisdictions, indicating infrastructure improvements over time.
-                </p>
-
-                {currentOwnership === 'Local' && (
-                    <p className="text-sm text-gray-600 mt-2">
-                        <strong>Note:</strong> Locally-owned bridges typically show higher deficiency rates than state-owned
-                        bridges, which may reflect differences in maintenance resources and funding.
-                    </p>
-                )}
+            <div className="data-viz chart">
+                <div className="chart-container border border-gray-200 rounded p-4 bg-gray-50 min-h-80" ref={chartRef}></div>
             </div>
 
-            <div className="mt-4 text-sm text-gray-500">
-                <p>Note: Lower values indicate better bridge conditions (fewer deficient bridges)</p>
-            </div>
+            
         </div>
     );
 };
