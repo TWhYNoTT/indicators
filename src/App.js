@@ -7,6 +7,10 @@ import PavementConditionsChart from './PavementConditionsChart';
 import TransitConditionsChart from './TransitConditionsChart';
 import TransitRidershipChart from './TransitRidershipChart';
 import TransportationSafetyChart from './TransportationSafetyChart';
+import AirQualityTrends from './AirQualityTrends';
+
+
+
 
 const TrackingProgressApp = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -192,6 +196,9 @@ const TrackingProgressApp = () => {
   const renderDetailView = () => {
     if (selectedIndicator === 'bridge-conditions') {
       return <BridgeConditionsChart />;
+    }
+    else if (selectedIndicator === 'air-quality') {
+      return <AirQualityTrends />;
     }
     else if (selectedIndicator === 'commute-mode') {
       return <CommuteModeChart />;
